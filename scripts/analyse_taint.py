@@ -4,8 +4,7 @@ from pathlib import Path
 
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "examples"
 BIN_TO_ANALYZE = "tainted_vs_untainted_branching"
-
-UNCONSTRAINED_VARS = {} # TODO: check if need to store or just call the function to get the unconstrained vars
+MAX_DEPTH = 100
 
 
 def check_unconstrained(state):
@@ -17,7 +16,6 @@ def check_unconstrained(state):
     possible_values = state.solver.eval_upto(rax_val, 2)
     if len(possible_values) > 1:
         print(f"Unconstrained value in RAX at 0x{state.addr}: {possible_values}")
-        UNCONSTRAINED_VARS[state.addr] = rax_val
 
 
 def main():
@@ -29,6 +27,9 @@ def main():
     simgr = proj.factory.simulation_manager(state)
 
     while simgr.active:
+        simgr.active = [s for s in simgr.active if s.history.depth <= MAX_DEPTH]
+        if not simgr.active:
+            break
         simgr.step()
 
 
