@@ -1,28 +1,23 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
-
-void foo(int* x) {
-    *x *= 2;
-}
-
+void foo(int *x) { *x *= 2; }
 
 void bar(int x) {
-    if (x > 10) {
-        printf("%d is > 10\n", x);
+    if (x > 5) {
+        printf("%d is > 5\n", x);
     } else {
-        printf("%d is <= 10\n", x);
+        printf("%d is <= 5\n", x);
     }
 }
 
-
-int main() {
+int main(void) {
     int x;
     int y = 3;
     int z;
-    char buf[10];
+    char buf[10]; // TODO: maybe malloc this
 
     while (true) {
         gets(buf);
@@ -37,7 +32,7 @@ int main() {
             z = x;
             x = 7; // x becomes constrained
 
-            if (z > 20) {
+            if (z > 30) {
                 foo(&x); // untainted
             } else {
                 bar(z); // tainted
@@ -49,4 +44,3 @@ int main() {
 
     return 0;
 }
-
