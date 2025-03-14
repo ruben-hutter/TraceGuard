@@ -1,13 +1,20 @@
-CC = gcc
-CFLAGS = -Wall -Wextra -pedantic -std=c99 -O2
+CC = clang
+CSTD = c99
+CFLAGS = -Wall -Wextra -Wpedantic -std=$(CSTD) -O2
 EXAMPLES_DIR = examples
 SOURCES = $(wildcard $(EXAMPLES_DIR)/*.c)
 EXAMPLES = $(SOURCES:.c=)
 
-all: $(EXAMPLES)
+all: format $(EXAMPLES)
 
 $(EXAMPLES): %: %.c
 	$(CC) $(CFLAGS) $< -o $@
+
+format:
+	clang-format -i $(SOURCES)
+
+tidy:
+	clang-tidy $(SOURCES) -- -std=$(CSTD)
 
 clean:
 	rm -f $(EXAMPLES)
