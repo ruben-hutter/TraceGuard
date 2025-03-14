@@ -3,21 +3,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-void foo(int *x) { *x *= 2; }
+void foo(int x) { printf("foo: %d\nunconstrained\n", x); }
 
-void bar(int x) {
-    if (x > 5) {
-        printf("%d is > 5\n", x);
-    } else {
-        printf("%d is <= 5\n", x);
-    }
-}
+void bar(int x) { printf("bar: %d\nconstrained\n", x); }
+
+void foo1(int x) { printf("foo1: %d\nconstrained\n", x); }
+
+void bar1(int x) { printf("bar1: %d\nunconstrained\n", x); }
 
 int main(void) {
     int x;
     int y = 3;
     int z;
-    char buf[10]; // TODO: maybe malloc this
+    char buf[10];
 
     while (true) {
         gets(buf);
@@ -25,20 +23,20 @@ int main(void) {
             break;
         }
 
-        x = atoi(buf); // unconstrained
+        x = atoi(buf); // x is unconstrained
 
         if (x > 10) {
-            foo(&x); // tainted
-            z = x;
+            foo(x);
+            z = x; // z becomes unconstrained
             x = 7; // x becomes constrained
 
             if (z > 30) {
-                foo(&x); // untainted
+                foo1(x); // x is constrained
             } else {
-                bar(z); // tainted
+                bar1(z); // z is unconstrained
             }
         } else {
-            bar(y); // untainted
+            bar(y); // y is constrained
         }
     }
 
