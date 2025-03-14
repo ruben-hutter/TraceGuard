@@ -1,0 +1,10 @@
+[project]
+name = "taint-guided-se"
+version = "0.1.0"
+description = "Taint-guided symbolic execution"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "angr>=9.2.146",
+    "claripy>=9.2.146",
+]
