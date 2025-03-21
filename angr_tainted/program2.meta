@@ -1,0 +1,4 @@
+void transform_data(const char *data, const char *suffix);
+void secondary_process(const char *input);
+void final_operation(const char *str1, const char *str2);
+
