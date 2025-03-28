@@ -1,4 +1,0 @@
-void deep_function(const char *param1, const char *param2);
-void middle_function(const char *data);
-void another_path(const char *input);
-void top_level(const char *user_input, const char *fixed_input);

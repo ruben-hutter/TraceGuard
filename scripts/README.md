@@ -36,7 +36,7 @@ make install-deps
 ## Usage
 
 ```bash
-python simple_taint.py <binary_path> [--quiet]
+python analyse_taint.py <binary_path> [--quiet]
 ```
 
 Using the Makefile:

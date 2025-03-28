@@ -1,5 +1,0 @@
-// Program1 function definitions
-void helper_function(const char *data);
-void process_data(const char *input, const char *fixed);
-void analyze_string(const char *str);
-void untainted_function(const char *fixed_str);

@@ -1,78 +1,37 @@
 import angr
+import claripy
 from pathlib import Path
-import networkx as nx
 
-def extract_vars(expr):
+EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "examples"
+BIN_TO_ANALYZE = "tainted_vs_untainted_branching"
+MAX_DEPTH = 100
+
+
+def check_unconstrained(state):
     """
-    Recursively extract variable dependencies from a VEX expression.
-    This function looks for read-from-temporary expressions (Iex_RdTmp).
+    This callback is triggered before every function call.
+    It checks if a specific register (e.g., RAX) is unconstrained, meaning it may have multiple possible values.
     """
-    uses = []
-    if hasattr(expr, "tag"):
-        # Check if the expression is a read from a temporary (e.g. Iex_RdTmp)
-        if expr.tag == "Iex_RdTmp":
-            uses.append("tmp_{}".format(expr.tmp))
-    # Recursively check for child expressions (if available)
-    if hasattr(expr, "child_expressions"):
-        for child in expr.child_expressions:
-            uses.extend(extract_vars(child))
-    # Also check for args (another way of nesting)
-    if hasattr(expr, "args"):
-        for child in expr.args:
-            uses.extend(extract_vars(child))
-    return uses
+    rax_val = state.regs.rax
+    possible_values = state.solver.eval_upto(rax_val, 2)
+    if len(possible_values) > 1:
+        print(f"Unconstrained value in RAX at 0x{state.addr}: {possible_values}")
 
-# Set the binary path to the tainted_vs_untainted_branching binary
-BIN_PATH = (
-    Path(__file__).resolve().parent.parent
-    / "examples"
-    / "tainted_vs_untainted_branching"
-)
 
-# Load the binary without auto-loading libraries for a focused analysis
-proj = angr.Project(BIN_PATH, auto_load_libs=False)
+def main():
+    bin_path = EXAMPLES_DIR / BIN_TO_ANALYZE
+    proj = angr.Project(bin_path, auto_load_libs=False)
+    sym_arg = claripy.BVS("sym_arg", 8 * 10)
+    state = proj.factory.full_init_state(args=[str(bin_path), sym_arg])
+    state.inspect.b("call", when=angr.BP_BEFORE, action=check_unconstrained)
+    simgr = proj.factory.simulation_manager(state)
 
-# Create an initial state with options to avoid unconstrained values
-state = proj.factory.entry_state(
-    options={
-        angr.options.ZERO_FILL_UNCONSTRAINED_REGISTERS,
-        angr.options.ZERO_FILL_UNCONSTRAINED_MEMORY,
-    }
-)
+    while simgr.active:
+        simgr.active = [s for s in simgr.active if s.history.depth <= MAX_DEPTH]
+        if not simgr.active:
+            break
+        simgr.step()
 
-# Generate a normalized control flow graph (CFG)
-cfg = proj.analyses.CFGFast(normalize=True)
 
-# Locate the 'main' function in the binary
-main_func = cfg.kb.functions.get("main")
-if main_func is None:
-    raise Exception("Could not locate 'main' in the binary.")
-
-# Create a Data Dependency Graph (DDG) using NetworkX
-ddg_graph = nx.DiGraph()
-
-# Iterate over each block in the main function
-for block in main_func.blocks:
-    # Iterate over each VEX statement in the block
-    for stmt in block.vex.statements:
-        # Process temporary writes (WrTmp)
-        if stmt.tag == "Ist_WrTmp":
-            lhs = "tmp_{}".format(stmt.tmp)
-            ddg_graph.add_node(lhs)
-            uses = extract_vars(stmt.data)
-            for u in uses:
-                ddg_graph.add_node(u)
-                ddg_graph.add_edge(u, lhs)
-        # Process register writes (Put)
-        elif stmt.tag == "Ist_Put":
-            lhs = "reg_{:x}".format(stmt.offset)
-            ddg_graph.add_node(lhs)
-            uses = extract_vars(stmt.data)
-            for u in uses:
-                ddg_graph.add_node(u)
-                ddg_graph.add_edge(u, lhs)
-
-print("Data Dependency Graph (DDG) edges:")
-for edge in ddg_graph.edges():
-    print(edge)
-
+if __name__ == "__main__":
+    main()

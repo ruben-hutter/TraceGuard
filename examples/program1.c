@@ -21,22 +21,22 @@ void untainted_function(const char *fixed_str) {
 
 int main() {
     char buffer[256];
-    
+
     printf("Enter some data: ");
     if (fgets(buffer, sizeof(buffer), stdin) != NULL) {
         // Remove newline if present
         size_t len = strlen(buffer);
-        if (len > 0 && buffer[len-1] == '\n') {
-            buffer[len-1] = '\0';
+        if (len > 0 && buffer[len - 1] == '\n') {
+            buffer[len - 1] = '\0';
         }
-        
+
         // Call functions with stdin data and constants
         process_data(buffer, "fixed string");
         analyze_string(buffer);
-        
+
         // Call function with only constant data
         untainted_function("constant data only");
     }
-    
+
     return 0;
 }
