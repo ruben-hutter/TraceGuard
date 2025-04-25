@@ -1,13 +1,13 @@
-CC = clang
+CC = gcc
 CSTD = c99
-CFLAGS = -Wall -Wextra -Wpedantic -std=$(CSTD) -O2
+CFLAGS = -Wall -Wextra -Wpedantic -std=$(CSTD) -g
 
 TARGETS_DIR = examples
 TARGETS_SRC = $(wildcard $(TARGETS_DIR)/*.c)
 TARGETS_BIN = $(TARGETS_SRC:.c=)
 
 SCRIPTS_DIR = scripts
-PYTHON_ANALYZER = $(SCRIPTS_DIR)/analyse_taint.py
+PYTHON_ANALYZER = $(SCRIPTS_DIR)/main.py
 
 all: format $(TARGETS_BIN)
 
