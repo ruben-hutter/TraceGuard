@@ -1,17 +1,15 @@
 import os
-import sys
 import angr
 from angr.exploration_techniques import LengthLimiter, LoopSeer
 
 from meta import parse_meta_file
 from taint import CheckTaintHook, FgetsTainter
 
-def analyze(
-    binary_path, verbose=True, max_steps=50, param_overrides=None, meta_file=None
-):
-    """Analyze the binary, skipping functions with untainted parameters."""
-    param_overrides = param_overrides or {}
 
+def _process_meta_file(binary_path, meta_file, verbose):
+    """Handle meta file parsing."""
+
+    param_overrides = {}
     # Try to find meta file automatically if none provided
     if meta_file is None:
         base_name = os.path.splitext(binary_path)[0]
@@ -34,6 +32,11 @@ def analyze(
                     print(
                         f"Using meta file parameter count for {func_name}: {param_count}"
                     )
+    return param_overrides
+
+
+def _setup_angr_project(binary_path):
+    """Set up the Angr project and initial configurations."""
 
     print(f"Analyzing {binary_path}")
 
@@ -44,9 +47,13 @@ def analyze(
     project._executed_count = 0
     project._skipped_count = 0
 
-    # Define lists of essential functions
-    essential_functions = ["_start", "main", "fgets"]
-    input_functions = ["fgets", "gets", "read", "scanf"]
+    # Create storage for parameter counts and overrides
+    project._param_counts = {}
+    return project
+
+
+def _hook_input_functions(project, verbose):
+    """Hook input functions to taint data."""
 
     # Hook fgets to taint data
     try:
@@ -55,6 +62,15 @@ def analyze(
             print("Hooked fgets")
     except Exception as e:
         print(f"Could not hook fgets: {e}")
+
+
+def _find_essential_functions(project, verbose):
+    """Find main and _start functions."""
+
+    essential_functions = ["_start", "main", "fgets"]
+    input_functions = ["fgets", "gets", "read", "scanf"]
+    main_addr = None
+    start_addr = None
 
     # Find main and _start functions
     try:
@@ -73,17 +89,15 @@ def analyze(
         start_addr = None
         print("Could not find _start function")
 
-    # Build CFG
-    if verbose:
-        print("Building CFG...")
-    cfg = project.analyses.CFGFast()
+    return main_addr, start_addr, essential_functions, input_functions
 
-    # Analyze functions for parameter count
+
+def _analyze_function_params(project, cfg, param_overrides, verbose):
+    """Analyze functions to estimate parameter counts."""
+
     if verbose:
         print("Analyzing functions for parameter count...")
 
-    # Create storage for parameter counts and overrides
-    project._param_counts = {}
     project._param_overrides = param_overrides
 
     # Estimate parameter counts for functions
@@ -91,7 +105,7 @@ def analyze(
         # Skip external functions
         if func.is_plt or func.is_syscall:
             continue
-        
+
         # Skip functions already overridden by meta file
         if func.name in project._param_overrides:
             if verbose:
@@ -182,7 +196,18 @@ def analyze(
             if verbose and func.name not in ["_start", "main"]:
                 print(f"Estimated {func.name} to have {max_observed_args} parameters")
 
-    # Hook user functions
+
+def _hook_user_functions(
+    project,
+    cfg,
+    main_addr,
+    start_addr,
+    essential_functions,
+    input_functions,
+    verbose,
+):
+    """Hook user-defined functions for taint analysis."""
+
     if verbose:
         print("Hooking program functions...")
     hook_count = 0
@@ -225,6 +250,11 @@ def analyze(
 
     if verbose:
         print(f"Hooked {hook_count} functions")
+    return hook_count
+
+
+def _run_symbolic_execution(project, hook_count, max_steps, verbose):
+    """Run symbolic execution of the binary."""
 
     # Create initial state and simulation manager
     state = project.factory.entry_state(
@@ -258,3 +288,27 @@ def analyze(
     )
     print(f"- Skipped {project._skipped_count} functions (untainted parameters)")
 
+
+def analyze(
+    binary_path, verbose=True, max_steps=50, param_overrides=None, meta_file=None
+):
+    """Analyze the binary, skipping functions with untainted parameters."""
+
+    param_overrides = _process_meta_file(binary_path, meta_file, verbose)
+    project = _setup_angr_project(binary_path)
+    _hook_input_functions(project, verbose)
+    main_addr, start_addr, essential_functions, input_functions = _find_essential_functions(
+        project, verbose
+    )
+    cfg = project.analyses.CFGFast()
+    _analyze_function_params(project, cfg, param_overrides, verbose)
+    hook_count = _hook_user_functions(
+        project,
+        cfg,
+        main_addr,
+        start_addr,
+        essential_functions,
+        input_functions,
+        verbose,
+    )
+    _run_symbolic_execution(project, hook_count, max_steps, verbose)

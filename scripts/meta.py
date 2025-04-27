@@ -1,5 +1,6 @@
 import os
 
+
 def parse_meta_file(meta_path, verbose=True):
     """Parse a meta file with function prototypes to get parameter counts."""
     if not os.path.exists(meta_path):
@@ -62,4 +63,3 @@ def parse_meta_file(meta_path, verbose=True):
         print(f"Parsed {len(function_params)} functions from meta file")
 
     return function_params
-

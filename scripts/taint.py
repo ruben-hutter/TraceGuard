@@ -1,6 +1,7 @@
 import angr
 import claripy
 
+
 class FgetsTainter(angr.SimProcedure):
     """SimProcedure for tainting input from fgets."""
 
