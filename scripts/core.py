@@ -4,6 +4,7 @@ from angr.exploration_techniques import LengthLimiter, LoopSeer
 
 from meta import parse_meta_file
 from taint import CheckTaintHook, FgetsTainter
+from visualize import save_call_graph
 
 
 def _process_meta_file(binary_path, meta_file, verbose):
@@ -49,6 +50,8 @@ def _setup_angr_project(binary_path):
 
     # Create storage for parameter counts and overrides
     project._param_counts = {}
+
+    project._call_graph = []    # (caller, callee, tainted)
     return project
 
 
@@ -312,3 +315,6 @@ def analyze(
         verbose,
     )
     _run_symbolic_execution(project, hook_count, max_steps, verbose)
+    save_call_graph(
+        project._call_graph, output_path="call_graph.png"
+    )

@@ -54,6 +54,25 @@ class CheckTaintHook(angr.SimProcedure):
         # Check for tainted parameters
         tainted, tainted_reg = self._check_parameters(param_count)
 
+        # Log function call in call graph
+        if hasattr(self.project, "_call_graph"):
+            try:
+                if self.state.history.parent and self.state.history.parent.addr:
+                    caller_func = self.project.kb.functions.get(
+                        self.state.history.parent.addr
+                    )
+                    if caller_func:
+                        caller_func = caller_func.name
+                else:
+                    caller_func = "ENTRY"
+            except:
+                pass
+            callee_func = self.func_name
+
+            self.project._call_graph.append(
+                (caller_func, callee_func, tainted)
+            )
+
         if tainted:
             # Execute function normally
             if self.verbose:
