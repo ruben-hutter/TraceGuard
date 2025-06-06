@@ -1,6 +1,7 @@
 # Exclude binaries in example/
 examples/*
 !examples/*.c
+!examples/*.meta
 
 # Created by https://www.toptal.com/developers/gitignore/api/assembler,c,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=assembler,c,python
