@@ -1,0 +1,70 @@
+%% ----------------------------------------------------------------
+%% Thesis.tex -- main
+%% ---------------------------------------------------------------- 
+
+\documentclass[a4paper, 10pt, oneside]{memoir}
+%% Use the option citeauthor to be able to use citet. The default cite will still work.
+\usepackage[citeauthor]{basilea}
+
+%% ----------------------------------------------------------------
+
+\title				{Optimizing Symbolic Execution Through Taint Analysis and Path Prioritization}
+\thesistype			{Bachelor thesis}
+
+\department 		{Department of Mathematics and Computer Science}
+\faculty			{Natural Science Faculty of the University of Basel}
+\research		    {Databases and Information Systems (DBIS) Group \\ \url{https://dbis.dmi.unibas.ch/}}
+
+\examiner    		{Dr. Marco Vogt}
+\supervisor  		{Prof. Dr. Christopher Scherb}
+
+\authors     		{Ruben Hutter}
+\email				{ruben.hutter@unibas.ch}
+\immatriculnr		{2020-065-934}
+
+\date				{02.07.2025}
+
+% switch here for the german logo to logo-de
+\ulogo				{Template/logo-en} 
+
+
+%% ----------------------------------------------------------------
+\begin{document}
+
+% for english use \selectlanguage{english}, for german use \selectlanguage{ngerman}
+\selectlanguage{english}
+
+\thesisfront
+\maketitle
+\pagestyle{thesis}
+%% ----------------------------------------------------------------
+% \input{./Front/Acknowledgment}
+%% ----------------------------------------------------------------
+\input{./Front/Abstract}
+%% ----------------------------------------------------------------
+\thesistoc
+%% ----------------------------------------------------------------
+%\thesisnomencl
+%% ----------------------------------------------------------------
+\thesismain
+\input{./Chapters/Chapter1}
+\input{./Chapters/Chapter2}
+\input{./Chapters/Chapter3}
+%\input{./Chapters/Chapter4}
+%\input{./Chapters/Chapter5}
+%\input{./Chapters/Chapter6}
+%\input{./Chapters/Chapter7}
+%% ----------------------------------------------------------------
+\thesisappendix
+\thesisbib
+\begin{appendices}
+	\input{./Back/AppendixA} 
+\end{appendices}
+%% ----------------------------------------------------------------
+\thesisback
+\iflanguage{english}
+  {\includepdf{./Back/wissensch_Redlichkeit_E_09-2023.pdf}}
+  {\includepdf{./Back/wissensch_Redlichkeit_D_09-2023.pdf}}
+%% ----------------------------------------------------------------
+\end{document}
+%% ----------------------------------------------------------------

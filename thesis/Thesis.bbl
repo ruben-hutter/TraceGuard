@@ -1,0 +1,20 @@
+\begin{thebibliography}{2}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Turing(1936)]{turing:1936}
+Alan~M Turing.
+\newblock On computable numbers, with an application to the
+  entscheidungsproblem.
+\newblock \emph{Proceedings of the London mathematical society}, 42\penalty0
+  (2):\penalty0 230--265, 1936.
+
+\bibitem[Turing(1950)]{turing:1950}
+Alan~M Turing.
+\newblock Computing machinery and intelligence.
+\newblock \emph{Mind}, 59\penalty0 (236):\penalty0 433--460, 1950.
+
+\end{thebibliography}
