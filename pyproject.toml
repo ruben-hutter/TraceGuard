@@ -8,4 +8,5 @@ dependencies = [
     "angr>=9.2.146",
     "claripy>=9.2.146",
     "matplotlib>=3.10.1",
+    "schnauzer>=0.1.1",
 ]
