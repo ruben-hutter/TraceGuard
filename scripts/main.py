@@ -1,65 +1,15 @@
-import angr
-import claripy
-import logging
 import sys
 import argparse
-import os
+import logging
+import claripy
+import angr
 from angr.exploration_techniques import DFS
+from pathlib import Path
 
-# --- Import from your meta.py ---
-try:
-    from meta import parse_meta_file
-except ImportError:
-    my_logger_meta = logging.getLogger(__name__ + ".meta_parser")
+from meta import parse_meta_file
 
-    def parse_meta_file(meta_path, verbose=True):
-        if not os.path.exists(meta_path):
-            if verbose:
-                my_logger_meta.warning(f"Meta file not found: {meta_path}")
-            return {}
-        function_params = {}
-        try:
-            with open(meta_path, "r") as f:
-                contents = f.read()
-            if verbose:
-                my_logger_meta.info(f"Parsing meta file: {meta_path}")
-            for line_num, line in enumerate(contents.splitlines(), 1):
-                line = line.strip()
-                if not line or line.startswith(("//", "#")):
-                    continue
-                if line.endswith(";"):
-                    line = line[:-1].strip()
-                if "(" in line and ")" in line:
-                    try:
-                        func_part = line.split("(", 1)[0].strip()
-                        func_name = func_part.split()[-1].replace("*", "")
-                        params_str = line.split("(", 1)[1].rsplit(")", 1)[0].strip()
-                        param_count = (
-                            0
-                            if not params_str or params_str.lower() == "void"
-                            else len(params_str.split(","))
-                        )
-                        function_params[func_name] = param_count
-                        if verbose:
-                            my_logger_meta.debug(
-                                f"Meta info: {func_name} has {param_count} parameters"
-                            )
-                    except Exception as e:
-                        if verbose:
-                            my_logger_meta.error(
-                                f"Error parsing line {line_num} in meta file '{meta_path}': {line} - {e}"
-                            )
-        except Exception as e:
-            if verbose:
-                my_logger_meta.error(f"Error reading meta file '{meta_path}': {e}")
-        if verbose:
-            my_logger_meta.info(
-                f"Parsed {len(function_params)} functions from meta file: {meta_path}"
-            )
-        return function_params
-# --- End of meta.py import/definition ---
 
-# Configure logging for angr
+# Logging configuration
 logging.getLogger("angr").setLevel(logging.ERROR)
 
 my_logger = logging.getLogger(__name__)
@@ -69,6 +19,7 @@ console_handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter("[%(levelname)s] - %(message)s")
 console_handler.setFormatter(formatter)
 my_logger.addHandler(console_handler)
+
 
 COMMON_LIBC_FUNCTIONS = {
     "printf",
@@ -115,6 +66,18 @@ INPUT_FUNCTION_NAMES = {"fgets", "gets", "scanf", "read", "recv", "fread"}
 
 
 def is_value_tainted(state, value, project_obj):
+    """
+    Check if a value is tainted by looking for symbolic variables or
+    checking if it points to a known tainted memory region.
+
+    Args:
+        state (angr.SimState): The current symbolic state.
+        value (angr.SimValue): The value to check for taint.
+        project_obj (angr.Project): The angr project object containing taint info.
+
+    Returns:
+        bool: True if the value is tainted, False otherwise.
+    """
     if not hasattr(value, "symbolic") or not value.symbolic:
         return False
 
@@ -144,7 +107,14 @@ def is_value_tainted(state, value, project_obj):
 
 
 def create_and_run_angr_project(args):
-    binary_path = args["binary_path"]
+    """
+    Create and run an angr project with function call hooking and taint analysis.
+
+    Args:
+        args (dict): Dictionary containing the arguments for the project.
+    """
+    binary_path = Path(args["binary_path"]).resolve()
+
     show_libc_prints = args.get("show_libc_prints", False)
     show_syscall_prints = args.get("show_syscall_prints", False)
     verbose = args.get("verbose", False)
@@ -157,6 +127,15 @@ def create_and_run_angr_project(args):
             "[%(levelname)s] - %(filename)s:%(lineno)d - %(message)s"
         )
         console_handler.setFormatter(formatter)
+
+    if args.get("meta_file"):
+        # Use provided meta file path
+        meta_file_path = Path(args["meta_file"]).resolve()
+        my_logger.info(f"Using meta file: {meta_file_path}")
+    else:
+        # Auto-detect meta file path based on binary name
+        meta_file_path = binary_path.with_suffix(".meta")
+        my_logger.info(f"Auto-detected meta file path: {meta_file_path}")
 
     try:
         project = angr.Project(binary_path, auto_load_libs=False)
@@ -174,33 +153,14 @@ def create_and_run_angr_project(args):
     project.tainted_edges = set()
     project.hook_call_id_counter = 0  # Initialize hook call counter on project
 
-    # --- Load Meta File ---
+    # Load Meta File
     project.meta_param_counts = {}
 
-    # Auto-detect meta file based on binary_path
-    binary_dir = os.path.dirname(
-        os.path.abspath(binary_path)
-    )  # Get absolute directory of binary
-    binary_filename_base = os.path.splitext(os.path.basename(binary_path))[0]
-    potential_meta_path = os.path.join(binary_dir, binary_filename_base + ".meta")
-
-    actual_meta_file_path = None
-
-    if os.path.exists(potential_meta_path):
-        my_logger.info(f"Found auto-detected meta file: {potential_meta_path}")
-        actual_meta_file_path = potential_meta_path
+    if meta_file_path.exists():
+        my_logger.info(f"Found meta file: {meta_file_path}")
+        parse_meta_file(meta_file_path, my_logger)
     else:
-        my_logger.warning(
-            f"Auto-detected meta file not found at: {potential_meta_path}. Continuing without meta file."
-        )
-
-    if actual_meta_file_path:
-        my_logger.info(f"Attempting to parse meta file: {actual_meta_file_path}")
-        project.meta_param_counts = parse_meta_file(
-            actual_meta_file_path,
-            verbose=(my_logger.getEffectiveLevel() <= logging.DEBUG),
-        )
-    # --- End Load Meta File ---
+        my_logger.warning(f"Meta file not found: {meta_file_path}")
 
     project.arch_info = {}
     if project.arch.name == "AMD64":
@@ -592,7 +552,8 @@ if __name__ == "__main__":
         help="Show hook prints for syscalls (default: hidden).",
     )
     parser.add_argument(
-        "-v", "--verbose",
+        "-v",
+        "--verbose",
         action="store_true",
         help="Enable verbose logging.",
     )
@@ -601,7 +562,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Enable debug logging.",
     )
-    # TODO: Add meta file argument to allow custom function parameter counts
+    parser.add_argument(
+        "--meta-file",
+        type=str,
+        default=None,
+        help="Path to the meta file containing function parameter counts (optional).",
+    )
 
     args = parser.parse_args()
 

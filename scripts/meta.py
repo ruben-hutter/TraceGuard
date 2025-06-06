@@ -6,7 +6,7 @@ def parse_meta_file(meta_path, my_logger):
     Parses a meta file to extract function names and their parameter counts.
 
     Args:
-        meta_path (str): Path to the meta file.
+        meta_path (Path or str): Path to the meta file.
         my_logger (Logger): Logger instance for logging messages.
 
     Returns:
