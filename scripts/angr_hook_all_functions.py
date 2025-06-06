@@ -66,11 +66,7 @@ my_logger = logging.getLogger(__name__)
 my_logger.setLevel(logging.INFO)
 my_logger.propagate = False
 console_handler = logging.StreamHandler(sys.stdout)
-info_formatter = logging.Formatter("[%(levelname)s] - %(message)s")
-dbg_formatter = logging.Formatter(
-    "[%(levelname)s] - %(filename)s:%(lineno)d - %(message)s"
-)
-formatter = info_formatter if my_logger.level == logging.INFO else dbg_formatter
+formatter = logging.Formatter("[%(levelname)s] - %(message)s")
 console_handler.setFormatter(formatter)
 my_logger.addHandler(console_handler)
 
@@ -147,10 +143,21 @@ def is_value_tainted(state, value, project_obj):
     return False
 
 
-def create_and_run_angr_project(config):
-    binary_path = config["binary_path"]
-    show_libc_prints = config.get("show_libc_prints", False)
-    show_syscall_prints = config.get("show_syscall_prints", False)
+def create_and_run_angr_project(args):
+    binary_path = args["binary_path"]
+    show_libc_prints = args.get("show_libc_prints", False)
+    show_syscall_prints = args.get("show_syscall_prints", False)
+    verbose = args.get("verbose", False)
+    debug = args.get("debug", False)
+
+    if verbose or debug:
+        my_logger.setLevel(logging.DEBUG)
+    if debug:
+        formatter = logging.Formatter(
+            "[%(levelname)s] - %(filename)s:%(lineno)d - %(message)s"
+        )
+        console_handler.setFormatter(formatter)
+
     try:
         project = angr.Project(binary_path, auto_load_libs=False)
         my_logger.info(f"Successfully loaded binary: {binary_path}")
@@ -584,6 +591,17 @@ if __name__ == "__main__":
         action="store_true",
         help="Show hook prints for syscalls (default: hidden).",
     )
+    parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging.",
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug logging.",
+    )
+    # TODO: Add meta file argument to allow custom function parameter counts
 
     args = parser.parse_args()
 
