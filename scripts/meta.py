@@ -1,24 +1,30 @@
-import os
+from pathlib import Path
 
 
-def parse_meta_file(meta_path, verbose=True):
-    """Parse a meta file with function prototypes to get parameter counts."""
-    if not os.path.exists(meta_path):
-        if verbose:
-            print(f"Meta file not found: {meta_path}")
+def parse_meta_file(meta_path, my_logger):
+    """
+    Parses a meta file to extract function names and their parameter counts.
+
+    Args:
+        meta_path (str): Path to the meta file.
+        my_logger (Logger): Logger instance for logging messages.
+
+    Returns:
+        dict: A dictionary mapping function names to their parameter counts.
+    """
+    meta_path = Path(meta_path)
+
+    if not meta_path.exists():
+        my_logger.error(f"Meta file not found: {meta_path}")
         return {}
 
     function_params = {}
 
     try:
-        with open(meta_path, "r") as f:
+        with meta_path.open("r") as f:
             contents = f.read()
-            if verbose:
-                print(f"Parsing meta file: {meta_path}")
-                print(f"Meta file contents ({len(contents)} bytes):")
-                print("---")
-                print(contents)
-                print("---")
+            my_logger.info(f"Parsing meta file: {meta_path}")
+            my_logger.debug(f"Meta file contents ({len(contents)} bytes)")
 
             for line_num, line in enumerate(contents.splitlines(), 1):
                 line = line.strip()
@@ -48,18 +54,14 @@ def parse_meta_file(meta_path, verbose=True):
                         # Store result
                         function_params[func_name] = param_count
 
-                        if verbose:
-                            print(
-                                f"Meta info: {func_name} has {param_count} parameters"
-                            )
+                        my_logger.debug(
+                            f"Meta info: {func_name} has {param_count} parameters"
+                        )
                     except Exception as e:
-                        if verbose:
-                            print(f"Error parsing line {line_num}: {line} - {e}")
+                        my_logger.error(f"Error parsing line {line_num}: {line} - {e}")
     except Exception as e:
-        if verbose:
-            print(f"Error parsing meta file: {e}")
+        my_logger.error(f"Error parsing meta file: {e}")
 
-    if verbose:
-        print(f"Parsed {len(function_params)} functions from meta file")
+    my_logger.info(f"Parsed {len(function_params)} functions from meta file")
 
     return function_params
