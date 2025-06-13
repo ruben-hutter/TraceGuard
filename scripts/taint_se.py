@@ -117,35 +117,46 @@ def generate_and_visualize_graph(project, func_info_map):
 
     # 1. Define the color map for Schnauzer
     type_color_map = {
-        'Tainted': '#FF0000',   # Red
-        'Normal': '#0000FF',    # Blue
+        "Tainted": "#FF0000",  # Red
+        "Normal": "#0000FF",  # Blue
     }
+
+    tainted_functions = set(project.tainted_functions)
+    for caller, callee in project.tainted_edges:
+        tainted_functions.add(caller)
+        tainted_functions.add(callee)
 
     # 2. Add all functions found in the binary as nodes
     for func_addr, func_details in func_info_map.items():
-        func_name = func_details['name']
+        func_name = func_details["name"]
         # Determine if the node is tainted and assign its type
-        node_type = 'Tainted' if func_name in project.tainted_functions else 'Normal'
+        node_type = "Tainted" if func_name in tainted_functions else "Normal"
         G.add_node(func_name, type=node_type, address=f"{func_addr:#x}")
 
     # 3. Add all function calls as edges
     # We use the project's knowledge base callgraph for this
-    if hasattr(project.kb, 'callgraph'):
+    if hasattr(project.kb, "callgraph"):
         for caller_addr, callee_addr in project.kb.callgraph.edges():
-            caller_name = func_info_map.get(caller_addr, {}).get('name')
-            callee_name = func_info_map.get(callee_addr, {}).get('name')
+            caller_name = func_info_map.get(caller_addr, {}).get("name")
+            callee_name = func_info_map.get(callee_addr, {}).get("name")
 
             # Ensure we have names for both caller and callee
             if caller_name and callee_name:
                 # Determine if the edge is tainted and assign its type
-                edge_type = 'Tainted' if (caller_name, callee_name) in project.tainted_edges else 'Normal'
+                edge_type = (
+                    "Tainted"
+                    if (caller_name, callee_name) in project.tainted_edges
+                    else "Normal"
+                )
                 G.add_edge(caller_name, callee_name, type=edge_type)
 
     # 4. Send the completed graph to the visualization client
     my_logger.info("Sending graph to Schnauzer visualization client...")
     try:
         viz_client = VisualizationClient()
-        viz_client.send_graph(G, 'Taint Analysis Call Graph', type_color_map=type_color_map)
+        viz_client.send_graph(
+            G, "Taint Analysis Call Graph", type_color_map=type_color_map
+        )
         my_logger.info("Graph successfully sent.")
     except Exception as e:
         my_logger.error(f"Failed to send graph to visualization client: {e}")
@@ -247,23 +258,35 @@ def create_and_run_angr_project(args):
             "Proceeding without explicit CFG, function discovery might be limited."
         )
 
-    func_info_map = {addr: { "name": f.name, "is_plt": f.is_plt, "is_syscall": f.is_syscall, "is_simprocedure": f.is_simprocedure }
-                     for addr, f in project.kb.functions.items() if f.name}
+    func_info_map = {
+        addr: {
+            "name": f.name,
+            "is_plt": f.is_plt,
+            "is_syscall": f.is_syscall,
+            "is_simprocedure": f.is_simprocedure,
+        }
+        for addr, f in project.kb.functions.items()
+        if f.name
+    }
 
     if not func_info_map:
         my_logger.warning("No functions found in the binary's knowledge base.")
 
     main_symbol = project.loader.find_symbol("main")
     if main_symbol:
-        my_logger.debug(f"Found main function symbol: {main_symbol.name} at {main_symbol.rebased_addr:#x}")
+        my_logger.debug(
+            f"Found main function symbol: {main_symbol.name} at {main_symbol.rebased_addr:#x}"
+        )
         main_addr = main_symbol.rebased_addr
         # Update func_info_map to ensure 'main' is correctly named if it was initially sub_0x...
         if main_addr in func_info_map:
-            my_logger.info(f"Correcting main function name from {func_info_map[main_addr]['name']} to {main_symbol.name}")
-            func_info_map[main_addr]['name'] = main_symbol.name
+            my_logger.info(
+                f"Correcting main function name from {func_info_map[main_addr]['name']} to {main_symbol.name}"
+            )
+            func_info_map[main_addr]["name"] = main_symbol.name
             # Also update project.kb.functions if necessary, though func_info_map is primary here
             if project.kb.functions.contains_addr(main_addr):
-                 project.kb.functions[main_addr].name = main_symbol.name
+                project.kb.functions[main_addr].name = main_symbol.name
     else:
         # Fallback if main not found
         if project.entry is None:
@@ -272,11 +295,13 @@ def create_and_run_angr_project(args):
         my_logger.warning("Main function symbol not found, using entry point as main.")
         main_addr = project.entry
 
-    main_symbol_name = func_info_map.get(main_addr, {}).get("name", f"sub_{main_addr:#x}")
+    main_symbol_name = func_info_map.get(main_addr, {}).get(
+        "name", f"sub_{main_addr:#x}"
+    )
     my_logger.debug(f"Main function address: {main_addr:#x}, name: {main_symbol_name}")
 
     try:
-        #initial_state = project.factory.entry_state(addr=main_addr)
+        # initial_state = project.factory.entry_state(addr=main_addr)
         initial_state = project.factory.full_init_state(addr=main_addr)
     except Exception as e:
         my_logger.error(f"Failed to create initial state at {main_addr:#x}: {e}")
@@ -348,9 +373,7 @@ def create_and_run_angr_project(args):
 
         called_addr = state.addr
         func_details = func_info_map.get(called_addr)
-        called_name = (
-            func_details["name"] if func_details else f"sub_{called_addr:#x}"
-        )
+        called_name = func_details["name"] if func_details else f"sub_{called_addr:#x}"
 
         # Determine Caller
         caller_name = "N/A (e.g., initial entry or no prior frame)"
@@ -362,14 +385,10 @@ def create_and_run_angr_project(args):
                 caller_addr = caller_frame.func_addr
                 caller_info = func_info_map.get(caller_addr)
                 caller_name = (
-                    caller_info["name"]
-                    if caller_info
-                    else f"sub_{caller_addr:#x}"
+                    caller_info["name"] if caller_info else f"sub_{caller_addr:#x}"
                 )
                 caller_func_address_str = f"{caller_addr:#x}"
-            elif (
-                state.callstack.current_function_address == main_addr
-            ):
+            elif state.callstack.current_function_address == main_addr:
                 caller_name = func_info_map[main_addr]["name"]
                 caller_func_address_str = f"{main_addr:#x} (main)"
             else:
@@ -456,9 +475,7 @@ def create_and_run_angr_project(args):
         # Printing Logic
         do_print = True
         if func_details:
-            is_libc = (
-                func_details["is_plt"] or called_name in COMMON_LIBC_FUNCTIONS
-            )
+            is_libc = func_details["is_plt"] or called_name in COMMON_LIBC_FUNCTIONS
             is_syscall_flag = func_details["is_syscall"]
             if (is_libc and not show_libc_prints) or (
                 is_syscall_flag and not show_syscall_prints
@@ -475,14 +492,18 @@ def create_and_run_angr_project(args):
     # TODO: Check this count. Where it is increased. Double increase input and generic hooks?
     hooked_count = 0
     for func_addr, func_details in func_info_map.items():
-        hook = input_function_hook if func_details["name"] in INPUT_FUNCTION_NAMES else generic_function_hook
+        hook = (
+            input_function_hook
+            if func_details["name"] in INPUT_FUNCTION_NAMES
+            else generic_function_hook
+        )
 
         try:
             project.hook(func_addr, hook, length=0)
             hooked_count += 1
         except Exception as e:
             my_logger.warning(
-                    f"Could not hook {func_details['name']} at {func_addr:#x}: {e}"
+                f"Could not hook {func_details['name']} at {func_addr:#x}: {e}"
             )
 
     my_logger.info(f"Hooked {hooked_count} functions for taint analysis.")
@@ -505,6 +526,7 @@ def create_and_run_angr_project(args):
     except Exception as e:
         my_logger.error(f"Unexpected error during simulation: {e}")
         import traceback
+
         traceback.print_exc()
 
     my_logger.info("Simulation complete.")
