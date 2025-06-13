@@ -2,45 +2,47 @@ This is BibTeX, Version 0.99d (TeX Live 2026/dev/Arch Linux)
 Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: Thesis.aux
 The style file: plainnat.bst
+I found no \citation commands---while reading file Thesis.aux
 Database file #1: thesis.bib
-You've used 2 entries,
+You've used 0 entries,
             2773 wiz_defined-function locations,
-            606 strings with 5053 characters,
-and the built_in function-call counts, 815 in all, are:
-= -- 76
-> -- 20
-< -- 2
-+ -- 8
-- -- 6
-* -- 60
-:= -- 128
-add.period$ -- 6
-call.type$ -- 2
-change.case$ -- 8
-chr.to.int$ -- 2
-cite$ -- 4
-duplicate$ -- 40
-empty$ -- 81
-format.name$ -- 8
-if$ -- 165
+            592 strings with 4830 characters,
+and the built_in function-call counts, 33 in all, are:
+= -- 0
+> -- 0
+< -- 0
++ -- 0
+- -- 0
+* -- 2
+:= -- 10
+add.period$ -- 0
+call.type$ -- 0
+change.case$ -- 0
+chr.to.int$ -- 0
+cite$ -- 0
+duplicate$ -- 0
+empty$ -- 1
+format.name$ -- 0
+if$ -- 1
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 2
-newline$ -- 18
-num.names$ -- 8
-pop$ -- 14
+missing$ -- 0
+newline$ -- 8
+num.names$ -- 0
+pop$ -- 0
 preamble$ -- 1
-purify$ -- 6
+purify$ -- 0
 quote$ -- 0
-skip$ -- 27
+skip$ -- 1
 stack$ -- 0
-substring$ -- 54
-swap$ -- 2
+substring$ -- 0
+swap$ -- 0
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 22
+type$ -- 0
 warning$ -- 0
-while$ -- 10
+while$ -- 0
 width$ -- 0
-write$ -- 33
+write$ -- 7
+(There was 1 error message)

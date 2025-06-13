@@ -1,20 +1,28 @@
 \babel@toc {english}{}\relax 
 \babel@toc {english}{}\relax 
-\contentsline {chapter}{Abstract}{ii}{chapter*.1}%
+\contentsline {chapter}{Acknowledgments}{ii}{chapter*.1}%
+\contentsline {chapter}{Abstract}{iii}{chapter*.2}%
 \vspace {2em}
-\contentsline {chapter}{\chapternumberline {1}Introduction}{1}{chapter.3}%
-\contentsline {chapter}{\chapternumberline {2}Body of the Thesis}{2}{chapter.5}%
-\contentsline {section}{\numberline {2.1}Structure}{2}{section.6}%
-\contentsline {subsection}{\numberline {2.1.1}Sub-Section}{2}{subsection.7}%
-\contentsline {subsubsection}{\numberline {2.1.1.1}Sub-Sub-Section}{2}{subsubsection.8}%
-\contentsline {paragraph}{Paragraph}{2}{section*.9}%
-\contentsline {subparagraph}{Even Sub-Paragraph}{2}{section*.10}%
-\contentsline {section}{\numberline {2.2}Equations}{2}{section.11}%
-\contentsline {section}{\numberline {2.3}Tables}{2}{section.13}%
-\contentsline {section}{\numberline {2.4}Figures}{3}{section.16}%
-\contentsline {section}{\numberline {2.5}Packages}{3}{section.24}%
-\contentsline {chapter}{\chapternumberline {3}Conclusion}{4}{chapter.25}%
+\contentsline {chapter}{\chapternumberline {1}Introduction}{1}{chapter.4}%
+\contentsline {section}{\numberline {1.1}Motivation: Why symbolic execution needs improvement}{1}{section.5}%
+\contentsline {section}{\numberline {1.2}Problem Statement}{1}{section.6}%
+\contentsline {section}{\numberline {1.3}Goals and Contributions}{1}{section.7}%
+\contentsline {section}{\numberline {1.4}Structure of the Thesis}{1}{section.8}%
+\contentsline {chapter}{\chapternumberline {2}Background}{2}{chapter.9}%
+\contentsline {section}{\numberline {2.1}Symbolic Execution}{2}{section.10}%
+\contentsline {subsection}{\numberline {2.1.1}Core Concepts}{2}{subsection.11}%
+\contentsline {subsection}{\numberline {2.1.2}Path Explosion Problem}{2}{subsection.12}%
+\contentsline {subsection}{\numberline {2.1.3}Existing Techniques for Path Pruning}{2}{subsection.13}%
+\contentsline {section}{\numberline {2.2}Taint Analysis}{2}{section.14}%
+\contentsline {subsection}{\numberline {2.2.1}Definition and Use Cases}{2}{subsection.15}%
+\contentsline {chapter}{\chapternumberline {3}Conceptual Implementation}{3}{chapter.16}%
+\contentsline {chapter}{\chapternumberline {4}Practical Implementation}{4}{chapter.17}%
+\contentsline {chapter}{\chapternumberline {5}Evaluation}{5}{chapter.18}%
+\contentsline {chapter}{\chapternumberline {6}Conclusion}{6}{chapter.19}%
+\contentsline {chapter}{\chapternumberline {7}Future Work}{7}{chapter.20}%
+\contentsline {chapter}{\chapternumberline {8}Related Work}{8}{chapter.21}%
+\contentsline {chapter}{\chapternumberline {9}Usage of AI}{9}{chapter.22}%
 \vspace {2em}
-\contentsline {chapter}{Bibliography}{5}{appendix*.26}%
-\contentsline {appendix}{\chapternumberline {A}Appendix}{6}{appendix.27}%
+\contentsline {chapter}{Bibliography}{10}{appendix*.23}%
+\contentsline {appendix}{\chapternumberline {A}Appendix}{11}{appendix.24}%
 \vspace {2em}
