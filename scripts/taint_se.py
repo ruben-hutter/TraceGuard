@@ -276,7 +276,8 @@ def create_and_run_angr_project(args):
     my_logger.debug(f"Main function address: {main_addr:#x}, name: {main_symbol_name}")
 
     try:
-        initial_state = project.factory.entry_state(addr=main_addr)
+        #initial_state = project.factory.entry_state(addr=main_addr)
+        initial_state = project.factory.full_init_state(addr=main_addr)
     except Exception as e:
         my_logger.error(f"Failed to create initial state at {main_addr:#x}: {e}")
         return
@@ -365,6 +366,7 @@ def create_and_run_angr_project(args):
                     if caller_info
                     else f"sub_{caller_addr:#x}"
                 )
+                caller_func_address_str = f"{caller_addr:#x}"
             elif (
                 state.callstack.current_function_address == main_addr
             ):
