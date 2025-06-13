@@ -1,15 +1,14 @@
-import sys
 import argparse
 import logging
-import claripy
+import sys
+from pathlib import Path
+
 import angr
+import claripy
 import networkx as nx
 from angr.exploration_techniques import DFS
-from pathlib import Path
-from schnauzer import VisualizationClient
-
 from meta import parse_meta_file
-
+from schnauzer import VisualizationClient
 
 # Logging configuration
 logging.getLogger("angr").setLevel(logging.ERROR)
@@ -234,6 +233,7 @@ def create_and_run_angr_project(args):
         project.arch_info["argument_registers"] = []
         project.arch_info["return_register"] = None
 
+    # Build CFG and func_info_map
     my_logger.info("Attempting to build CFG to identify functions...")
     try:
         cfg = project.analyses.CFGFast()
@@ -247,50 +247,33 @@ def create_and_run_angr_project(args):
             "Proceeding without explicit CFG, function discovery might be limited."
         )
 
-    func_info_map = {}
-    if project.kb.functions:
-        for func_addr, func_obj in project.kb.functions.items():
-            func_info_map[func_addr] = {
-                # TODO: Check what this attributes are
-                "name": func_obj.name,
-                "is_plt": func_obj.is_plt,
-                "is_syscall": func_obj.is_syscall,
-                "is_simprocedure": func_obj.is_simprocedure,
-            }
+    func_info_map = {addr: { "name": f.name, "is_plt": f.is_plt, "is_syscall": f.is_syscall, "is_simprocedure": f.is_simprocedure }
+                     for addr, f in project.kb.functions.items() if f.name}
 
     if not func_info_map:
         my_logger.warning("No functions found in the binary's knowledge base.")
 
     main_symbol = project.loader.find_symbol("main")
-    if not main_symbol:
-        common_mains = ["main", "_main", "start", "_start"]
-        for name in common_mains:
-            main_symbol = project.loader.find_symbol(name)
-            if main_symbol:
-                my_logger.info(f"Found entry point '{name}' as main.")
-                break
-
-    if not main_symbol:
-        my_logger.error(
-            "No 'main' function or common alternatives found in the binary."
-        )
-        if project.entry:
-            my_logger.info(
-                f"Using project.entry {project.entry:#x} as a fallback entry point."
-            )
-            main_addr = project.entry
-            main_func_details = func_info_map.get(main_addr)
-            main_symbol_name = (
-                main_func_details["name"]
-                if main_func_details
-                else f"sub_{main_addr:#x}"
-            )
-        else:
+    if main_symbol:
+        my_logger.debug(f"Found main function symbol: {main_symbol.name} at {main_symbol.rebased_addr:#x}")
+        main_addr = main_symbol.rebased_addr
+        # Update func_info_map to ensure 'main' is correctly named if it was initially sub_0x...
+        if main_addr in func_info_map:
+            my_logger.info(f"Correcting main function name from {func_info_map[main_addr]['name']} to {main_symbol.name}")
+            func_info_map[main_addr]['name'] = main_symbol.name
+            # Also update project.kb.functions if necessary, though func_info_map is primary here
+            if project.kb.functions.contains_addr(main_addr):
+                 project.kb.functions[main_addr].name = main_symbol.name
+    else:
+        # Fallback if main not found
+        if project.entry is None:
             my_logger.error("No entry point could be determined.")
             return
-    else:
-        main_addr = main_symbol.rebased_addr
-        main_symbol_name = main_symbol.name
+        my_logger.warning("Main function symbol not found, using entry point as main.")
+        main_addr = project.entry
+
+    main_symbol_name = func_info_map.get(main_addr, {}).get("name", f"sub_{main_addr:#x}")
+    my_logger.debug(f"Main function address: {main_addr:#x}, name: {main_symbol_name}")
 
     try:
         initial_state = project.factory.entry_state(addr=main_addr)
@@ -362,40 +345,33 @@ def create_and_run_angr_project(args):
     def generic_function_hook(state):
         project.hook_call_id_counter += 1
 
-        called_func_addr = state.addr
-        func_details = func_info_map.get(called_func_addr)
-        called_func_name = (
-            func_details["name"] if func_details else f"sub_{called_func_addr:#x}"
+        called_addr = state.addr
+        func_details = func_info_map.get(called_addr)
+        called_name = (
+            func_details["name"] if func_details else f"sub_{called_addr:#x}"
         )
 
         # Determine Caller
         caller_name = "N/A (e.g., initial entry or no prior frame)"
         caller_func_address_str = "N/A"
-        # TODO: Check all this comments
-        if state.callstack:  # Check if callstack is not empty
-            # The top of the callstack is the current function, so caller is callstack.func_addr if available,
-            # or one level down if we want the calling *function* rather than return site.
-            # Angr's callstack.func_addr refers to the *current* function's address.
-            # To get the *caller's* function address, we look at callstack.call_site_addr (return address)
-            # and then try to resolve the function containing that call site if needed, or use callstack_frames[1]
-            callstack_frames = list(state.callstack)  # Make a copy to inspect
-            if len(callstack_frames) > 0:  # Current frame is callstack_frames[0]
-                # The actual caller function address is often best found one level down if available
-                if len(callstack_frames) > 1:
-                    caller_frame = callstack_frames[1]  # Caller's frame
-                    caller_actual_addr_from_frame = caller_frame.func_addr
-                    caller_func_address_str = f"0x{caller_actual_addr_from_frame:x}"
-                    caller_info = func_info_map.get(caller_actual_addr_from_frame)
-                    caller_name = (
-                        caller_info["name"]
-                        if caller_info
-                        else f"sub_{caller_actual_addr_from_frame:#x}"
-                    )
-                elif (
-                    state.callstack.current_function_address != main_addr
-                ):  # If it's not main but no deeper callstack
-                    # This might be a call from an uninstrumented part or complex scenario
-                    caller_name = f"N/A (shallow stack, current: {called_func_name})"
+        if state.callstack:
+            callstack_frames = list(state.callstack)
+            if len(callstack_frames) > 1:
+                caller_frame = callstack_frames[1]
+                caller_addr = caller_frame.func_addr
+                caller_info = func_info_map.get(caller_addr)
+                caller_name = (
+                    caller_info["name"]
+                    if caller_info
+                    else f"sub_{caller_addr:#x}"
+                )
+            elif (
+                state.callstack.current_function_address == main_addr
+            ):
+                caller_name = func_info_map[main_addr]["name"]
+                caller_func_address_str = f"{main_addr:#x} (main)"
+            else:
+                caller_name = f"N/A (shallow stack, current: {called_name})"
 
         # Taint Checking Logic
         arguments_are_tainted = False
@@ -406,19 +382,19 @@ def create_and_run_angr_project(args):
         num_args_to_check_from_meta = -1  # Flag to indicate not found in meta
         if (
             hasattr(project, "meta_param_counts")
-            and called_func_name in project.meta_param_counts
+            and called_name in project.meta_param_counts
         ):
-            num_args_to_check_from_meta = project.meta_param_counts[called_func_name]
+            num_args_to_check_from_meta = project.meta_param_counts[called_name]
             # Ensure we don't check more registers than available for the arch for register arguments
             num_args_to_check = min(num_args_to_check_from_meta, len(arch_arg_regs))
             my_logger.debug(
-                f"Meta for {called_func_name}: {num_args_to_check_from_meta} params. Will check {num_args_to_check} registers."
+                f"Meta for {called_name}: {num_args_to_check_from_meta} params. Will check {num_args_to_check} registers."
             )
         else:
             # Default: check all configured registers if no meta info
             num_args_to_check = len(arch_arg_regs)
             my_logger.debug(
-                f"No meta param count for {called_func_name}, defaulting to check {num_args_to_check} registers."
+                f"No meta param count for {called_name}, defaulting to check {num_args_to_check} registers."
             )
         # --- End Determine number of arguments ---
 
@@ -430,7 +406,7 @@ def create_and_run_angr_project(args):
                     if is_value_tainted(state, arg_value, project):
                         arguments_are_tainted = True
                         my_logger.info(
-                            f"TAINT_ARG: Function {called_func_name} (at {state.addr:#x}) called with tainted argument in register {arg_reg_name}."
+                            f"TAINT_ARG: Function {called_name} (at {state.addr:#x}) called with tainted argument in register {arg_reg_name}."
                         )
                         break
                     if not arg_value.symbolic:
@@ -439,7 +415,7 @@ def create_and_run_angr_project(args):
                             if ptr_addr in project.tainted_memory_regions:
                                 arguments_are_tainted = True
                                 my_logger.info(
-                                    f"TAINT_ARG_PTR: Function {called_func_name} called with {arg_reg_name} pointing to base of tainted region {ptr_addr:#x}."
+                                    f"TAINT_ARG_PTR: Function {called_name} called with {arg_reg_name} pointing to base of tainted region {ptr_addr:#x}."
                                 )
                                 break
                             mem_val_check = state.memory.load(
@@ -448,7 +424,7 @@ def create_and_run_angr_project(args):
                             if is_value_tainted(state, mem_val_check, project):
                                 arguments_are_tainted = True
                                 my_logger.info(
-                                    f"TAINT_ARG_PTR: Function {called_func_name} called with {arg_reg_name} (value {ptr_addr:#x}) pointing to tainted data."
+                                    f"TAINT_ARG_PTR: Function {called_name} called with {arg_reg_name} (value {ptr_addr:#x}) pointing to tainted data."
                                 )
                                 break
                         except (
@@ -458,37 +434,28 @@ def create_and_run_angr_project(args):
                             pass
                         except angr.errors.SimSolverError:
                             my_logger.debug(
-                                f"Solver error evaluating arg {arg_reg_name} for {called_func_name} as pointer."
+                                f"Solver error evaluating arg {arg_reg_name} for {called_name} as pointer."
                             )
                 except AttributeError:
                     my_logger.warning(
-                        f"Register {arch_arg_regs[i]} not found for arch {project.arch.name} checking args for {called_func_name}."
+                        f"Register {arch_arg_regs[i]} not found for arch {project.arch.name} checking args for {called_name}."
                     )
                 except Exception as e:
                     my_logger.error(
-                        f"Error checking argument {arch_arg_regs[i]} for {called_func_name}: {e}"
+                        f"Error checking argument {arch_arg_regs[i]} for {called_name}: {e}"
                     )
 
-        taint_status_msg = ""
+        taint_status_msg = " [TAINTED]" if arguments_are_tainted else ""
         if arguments_are_tainted:
-            project.tainted_functions.add(called_func_name)
-            taint_status_msg = " [RECEIVES_TAINT]"
-            if (
-                caller_name != "N/A (e.g., initial entry or no prior frame)"
-                and caller_name != f"N/A (shallow stack, current: {called_func_name})"
-            ):
-                project.tainted_edges.add((caller_name, called_func_name))
-                my_logger.debug(
-                    f"TAINT_EDGE: Added tainted edge from {caller_name} to {called_func_name}"
-                )
-        elif called_func_name in project.tainted_functions:
-            taint_status_msg = " [WAS_TAINTED]"
+            project.tainted_functions.add(called_name)
+            if not caller_name.startswith("N/A"):
+                project.tainted_edges.add((caller_name, called_name))
 
         # Printing Logic
         do_print = True
         if func_details:
             is_libc = (
-                func_details["is_plt"] or called_func_name in COMMON_LIBC_FUNCTIONS
+                func_details["is_plt"] or called_name in COMMON_LIBC_FUNCTIONS
             )
             is_syscall_flag = func_details["is_syscall"]
             if (is_libc and not show_libc_prints) or (
@@ -499,37 +466,21 @@ def create_and_run_angr_project(args):
         if do_print:
             num_active_paths_total = len(simgr.active) if simgr else 0
             my_logger.debug(
-                f"HOOK #{project.hook_call_id_counter:03d} :: CALLED: {called_func_name}{taint_status_msg} (at 0x{called_func_addr:x}) :: FROM: {caller_name} (at {caller_func_address_str}) :: StateID: {id(state):#x} :: ActivePaths: {num_active_paths_total}"
+                f"HOOK #{project.hook_call_id_counter:03d} :: CALLED: {called_name}{taint_status_msg} (at 0x{called_addr:x}) :: FROM: {caller_name} (at {caller_func_address_str}) :: StateID: {id(state):#x} :: ActivePaths: {num_active_paths_total}"
             )
 
     my_logger.info("Hooking functions with taint analysis logic...")
     # TODO: Check this count. Where it is increased. Double increase input and generic hooks?
     hooked_count = 0
-    for func_addr_hook, func_obj_details_hook in func_info_map.items():
-        # Skip SimProcedures unless they are specifically handled input sources
-        current_func_name = func_obj_details_hook["name"]
-        if (
-            func_obj_details_hook["is_simprocedure"]
-            and current_func_name not in INPUT_FUNCTION_NAMES
-        ):
-            my_logger.debug(
-                f"Skipping hook for non-input SimProcedure: {current_func_name}"
-            )
-            continue
-
-        hook_to_use = generic_function_hook
-        if current_func_name in INPUT_FUNCTION_NAMES:
-            hook_to_use = input_function_hook
-            my_logger.info(
-                f"Assigning INPUT_FUNCTION_HOOK to {current_func_name} at {func_addr_hook:#x}"
-            )
+    for func_addr, func_details in func_info_map.items():
+        hook = input_function_hook if func_details["name"] in INPUT_FUNCTION_NAMES else generic_function_hook
 
         try:
-            project.hook(func_addr_hook, hook_to_use, length=0)
+            project.hook(func_addr, hook, length=0)
             hooked_count += 1
         except Exception as e:
             my_logger.warning(
-                f"Could not hook {current_func_name} at {func_addr_hook:#x}: {e}"
+                    f"Could not hook {func_details['name']} at {func_addr:#x}: {e}"
             )
 
     my_logger.info(f"Hooked {hooked_count} functions for taint analysis.")
