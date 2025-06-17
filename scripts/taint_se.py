@@ -2,13 +2,11 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-
 import angr
 import claripy
-import networkx as nx
 from angr.exploration_techniques import DFS
 from meta import parse_meta_file
-from schnauzer import VisualizationClient
+from visualize import generate_and_visualize_graph
 
 # Logging configuration
 logging.getLogger("angr").setLevel(logging.ERROR)
@@ -107,61 +105,6 @@ def is_value_tainted(state, value, project_obj):
     return False
 
 
-def generate_and_visualize_graph(project, func_info_map):
-    """
-    Builds a call graph and sends it to the Schnauzer client for visualization.
-    Tainted nodes and edges are colored red, others are blue.
-    """
-    my_logger.info("Generating call graph for visualization...")
-    G = nx.DiGraph()
-
-    # 1. Define the color map for Schnauzer
-    type_color_map = {
-        "Tainted": "#FF0000",  # Red
-        "Normal": "#0000FF",  # Blue
-    }
-
-    tainted_functions = set(project.tainted_functions)
-    for caller, callee in project.tainted_edges:
-        tainted_functions.add(caller)
-        tainted_functions.add(callee)
-
-    # 2. Add all functions found in the binary as nodes
-    for func_addr, func_details in func_info_map.items():
-        func_name = func_details["name"]
-        # Determine if the node is tainted and assign its type
-        node_type = "Tainted" if func_name in tainted_functions else "Normal"
-        G.add_node(func_name, type=node_type, address=f"{func_addr:#x}")
-
-    # 3. Add all function calls as edges
-    # We use the project's knowledge base callgraph for this
-    if hasattr(project.kb, "callgraph"):
-        for caller_addr, callee_addr in project.kb.callgraph.edges():
-            caller_name = func_info_map.get(caller_addr, {}).get("name")
-            callee_name = func_info_map.get(callee_addr, {}).get("name")
-
-            # Ensure we have names for both caller and callee
-            if caller_name and callee_name:
-                # Determine if the edge is tainted and assign its type
-                edge_type = (
-                    "Tainted"
-                    if (caller_name, callee_name) in project.tainted_edges
-                    else "Normal"
-                )
-                G.add_edge(caller_name, callee_name, type=edge_type)
-
-    # 4. Send the completed graph to the visualization client
-    my_logger.info("Sending graph to Schnauzer visualization client...")
-    try:
-        viz_client = VisualizationClient()
-        viz_client.send_graph(
-            G, "Taint Analysis Call Graph", type_color_map=type_color_map
-        )
-        my_logger.info("Graph successfully sent.")
-    except Exception as e:
-        my_logger.error(f"Failed to send graph to visualization client: {e}")
-
-
 def create_and_run_angr_project(args):
     """
     Create and run an angr project with function call hooking and taint analysis.
@@ -208,13 +151,10 @@ def create_and_run_angr_project(args):
     project.tainted_memory_regions = {}
     project.tainted_edges = set()
     project.hook_call_id_counter = 0  # Initialize hook call counter on project
-
     # Load Meta File
-    project.meta_param_counts = {}
-
     if meta_file_path.exists():
         my_logger.info(f"Found meta file: {meta_file_path}")
-        parse_meta_file(meta_file_path, my_logger)
+        project.meta_param_counts = parse_meta_file(meta_file_path, my_logger)
     else:
         my_logger.warning(f"Meta file not found: {meta_file_path}")
 
@@ -242,7 +182,7 @@ def create_and_run_angr_project(args):
             f"Architecture {project.arch.name} argument registers not fully configured for taint analysis."
         )
         project.arch_info["argument_registers"] = []
-        project.arch_info["return_register"] = None
+        project.arch_info["return_register"] = ""
 
     # Build CFG and func_info_map
     my_logger.info("Attempting to build CFG to identify functions...")
@@ -563,7 +503,7 @@ def create_and_run_angr_project(args):
         )
 
     # Generate and visualize the call graph
-    generate_and_visualize_graph(project, func_info_map)
+    generate_and_visualize_graph(project, func_info_map, my_logger)
 
 
 if __name__ == "__main__":
