@@ -1,3 +1,11 @@
+/*
+ * Program: program3.c
+ * Description: This program demonstrates complex taint flow paths through
+ * nested function calls. It takes multiple user inputs and passes them
+ * through different execution paths (top_level, middle_function, another_path,
+ * deep_function) to show how taint can spread across various arguments
+ * and call stacks.
+ */
 #include <stdio.h>
 #include <string.h>
 
@@ -28,37 +36,44 @@ int main() {
     char comment[128];
 
     printf("Enter your name: ");
-    if (fgets(name, sizeof(name), stdin) != NULL) {
-        // Remove newline
-        size_t len = strlen(name);
-        if (len > 0 && name[len - 1] == '\n') {
-            name[len - 1] = '\0';
-        }
-
-        printf("Enter ID: ");
-        if (fgets(id, sizeof(id), stdin) != NULL) {
-            // Remove newline
-            len = strlen(id);
-            if (len > 0 && id[len - 1] == '\n') {
-                id[len - 1] = '\0';
-            }
-
-            printf("Enter comment: ");
-            if (fgets(comment, sizeof(comment), stdin) != NULL) {
-                // Remove newline
-                len = strlen(comment);
-                if (len > 0 && comment[len - 1] == '\n') {
-                    comment[len - 1] = '\0';
-                }
-
-                // Various function calls with different parameter combinations
-                top_level(name, "constant string");
-                middle_function(id);
-                another_path(comment);
-                deep_function(name, id);
-            }
-        }
+    if (!fgets(name, sizeof(name), stdin)) {
+        return 1;
     }
+
+    // Remove newline
+    size_t len = strlen(name);
+    if (len > 0 && name[len - 1] == '\n') {
+        name[len - 1] = '\0';
+    }
+
+    printf("Enter ID: ");
+    if (!fgets(id, sizeof(id), stdin)) {
+        return 1;
+    }
+
+    // Remove newline
+    len = strlen(id);
+    if (len > 0 && id[len - 1] == '\n') {
+        id[len - 1] = '\0';
+    }
+
+    printf("Enter comment: ");
+    if (!fgets(comment, sizeof(comment), stdin)) {
+        return 1;
+    }
+
+    // Remove newline
+    len = strlen(comment);
+    if (len > 0 && comment[len - 1] == '\n') {
+        comment[len - 1] = '\0';
+    }
+
+    // Various function calls with different parameter
+    // combinations
+    top_level(name, "constant string");
+    middle_function(id);
+    another_path(comment);
+    deep_function(name, id);
 
     return 0;
 }

@@ -1,3 +1,10 @@
+/*
+ * Program: program2.c
+ * Description: This program demonstrates taint propagation through multiple
+ * function calls and string manipulation. It takes two user inputs and
+ * passes them through a chain of functions (transform_data, secondary_process,
+ * final_operation) to illustrate how taint can persist and combine.
+ */
 #include <stdio.h>
 #include <string.h>
 
@@ -22,27 +29,31 @@ int main() {
     char input2[128];
 
     printf("Enter first string: ");
-    if (fgets(input1, sizeof(input1), stdin) != NULL) {
-        // Remove newline
-        size_t len = strlen(input1);
-        if (len > 0 && input1[len - 1] == '\n') {
-            input1[len - 1] = '\0';
-        }
-
-        printf("Enter second string: ");
-        if (fgets(input2, sizeof(input2), stdin) != NULL) {
-            // Remove newline
-            len = strlen(input2);
-            if (len > 0 && input2[len - 1] == '\n') {
-                input2[len - 1] = '\0';
-            }
-
-            // Function calls with combinations of inputs and constants
-            transform_data(input1, input2);
-            secondary_process("constant string");
-            final_operation(input1, "fixed parameter");
-        }
+    if (!fgets(input1, sizeof(input1), stdin)) {
+        return 1;
     }
+
+    // Remove newline
+    size_t len = strlen(input1);
+    if (len > 0 && input1[len - 1] == '\n') {
+        input1[len - 1] = '\0';
+    }
+
+    printf("Enter second string: ");
+    if (!fgets(input2, sizeof(input2), stdin)) {
+        return 1;
+    }
+
+    // Remove newline
+    len = strlen(input2);
+    if (len > 0 && input2[len - 1] == '\n') {
+        input2[len - 1] = '\0';
+    }
+
+    // Function calls with combinations of inputs and constants
+    transform_data(input1, input2);
+    secondary_process("constant string");
+    final_operation(input1, "fixed parameter");
 
     return 0;
 }

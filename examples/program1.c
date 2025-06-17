@@ -1,3 +1,10 @@
+/*
+ * Program: program1.c
+ * Description: This program demonstrates basic taint analysis.
+ * It takes user input using fgets and passes it to various functions
+ * (process_data, analyze_string, untainted_function) to show how taint
+ * propagates through arguments and memory.
+ */
 #include <stdio.h>
 #include <string.h>
 
@@ -23,20 +30,22 @@ int main() {
     char buffer[256];
 
     printf("Enter some data: ");
-    if (fgets(buffer, sizeof(buffer), stdin) != NULL) {
-        // Remove newline if present
-        size_t len = strlen(buffer);
-        if (len > 0 && buffer[len - 1] == '\n') {
-            buffer[len - 1] = '\0';
-        }
-
-        // Call functions with stdin data and constants
-        process_data(buffer, "fixed string");
-        analyze_string(buffer);
-
-        // Call function with only constant data
-        untainted_function("constant data only");
+    if (!fgets(buffer, sizeof(buffer), stdin)) {
+        return 1;
     }
+
+    // Remove newline if present
+    size_t len = strlen(buffer);
+    if (len > 0 && buffer[len - 1] == '\n') {
+        buffer[len - 1] = '\0';
+    }
+
+    // Call functions with stdin data and constants
+    process_data(buffer, "fixed string");
+    analyze_string(buffer);
+
+    // Call function with only constant data
+    untainted_function("constant data only");
 
     return 0;
 }
