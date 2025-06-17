@@ -1,0 +1,11 @@
+// Program1 function definitions
+void bar_l(const char *input, const char *fixed_str);
+void bar(const char *fixed_str);
+void main_l();
+void foo_l_l(const char *data);
+void foo_l_r();
+void foo_l(const char *data);
+void foo_r(const char *data);
+void foo(const char *data);
+void main_r_r(const char *data);
+void main_r(const char *data);
