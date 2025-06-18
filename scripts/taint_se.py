@@ -10,14 +10,7 @@ from visualize import generate_and_visualize_graph
 
 # Logging configuration
 logging.getLogger("angr").setLevel(logging.ERROR)
-
 my_logger = logging.getLogger(__name__)
-my_logger.setLevel(logging.INFO)
-my_logger.propagate = False
-console_handler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter("[%(levelname)s] - %(message)s")
-console_handler.setFormatter(formatter)
-my_logger.addHandler(console_handler)
 
 
 COMMON_LIBC_FUNCTIONS = {
@@ -90,6 +83,16 @@ class TaintAnalyzer:
 
     def _configure_logging(self):
         """Configures the logger based on verbose/debug arguments."""
+        if my_logger.hasHandlers():
+            my_logger.handlers.clear()
+
+        console_handler = logging.StreamHandler(sys.stdout)
+        formatter = logging.Formatter("[%(levelname)s] - %(message)s")
+        console_handler.setFormatter(formatter)
+        my_logger.addHandler(console_handler)
+
+        my_logger.setLevel(logging.INFO)
+
         if self.args.get("verbose") or self.args.get("debug"):
             my_logger.setLevel(logging.DEBUG)
         if self.args.get("debug"):
@@ -97,6 +100,8 @@ class TaintAnalyzer:
                 "[%(levelname)s] - %(filename)s:%(lineno)d - %(message)s"
             )
             console_handler.setFormatter(formatter)
+
+        my_logger.propagate = False
 
     def _load_project(self):
         """Loads the binary into an Angr project."""
