@@ -57,6 +57,11 @@ COMMON_LIBC_FUNCTIONS = {
 INPUT_FUNCTION_NAMES = {"fgets", "gets", "scanf", "read", "recv", "fread"}
 
 
+class AnalysisSetupError(Exception):
+    """Custom exception for errors during TaintAnalyzer setup."""
+    pass
+
+
 class TaintAnalyzer:
     """
     A class to encapsulate the Angr project setup, taint analysis logic,
@@ -73,17 +78,17 @@ class TaintAnalyzer:
         self.simgr = None
 
         self._configure_logging()
+
         self._load_project()
-        if self.project:
-            self._initialize_project_taint_attributes()
-            self._load_meta_file()
-            self._configure_architecture_info()
-            self._build_cfg_and_function_map()
-            self._identify_main_function()
+        self._initialize_project_taint_attributes()
+        self._load_meta_file()
+        self._configure_architecture_info()
+        self._build_cfg_and_function_map()
+        self._identify_main_function()
 
     def _configure_logging(self):
         """Configures the logger based on verbose/debug arguments."""
-        if my_logger.hasHandlers():
+        if my_logger.handlers:
             my_logger.handlers.clear()
 
         console_handler = logging.StreamHandler(sys.stdout)
@@ -96,62 +101,71 @@ class TaintAnalyzer:
         if self.args.get("verbose") or self.args.get("debug"):
             my_logger.setLevel(logging.DEBUG)
         if self.args.get("debug"):
-            formatter = logging.Formatter(
+            debug_formatter = logging.Formatter(
                 "[%(levelname)s] - %(filename)s:%(lineno)d - %(message)s"
             )
-            console_handler.setFormatter(formatter)
+            console_handler.setFormatter(debug_formatter)
 
         my_logger.propagate = False
 
     def _load_project(self):
-        """Loads the binary into an Angr project."""
+        """Loads the binary into an Angr project, raises AnalysisSetupError on failure."""
         try:
             self.project = angr.Project(self.binary_path, auto_load_libs=False)
             my_logger.info(f"Successfully loaded binary: {self.binary_path}")
-        except angr.errors.AngrFileNotFoundError:
+        except angr.errors.AngrFileNotFoundError as e:
             my_logger.error(f"Binary file not found at: {self.binary_path}")
-            self.project = None
+            raise AnalysisSetupError(
+                f"Binary file not found: {self.binary_path}"
+            ) from e
         except Exception as e:
             my_logger.error(f"Failed to load binary {self.binary_path}: {e}")
-            self.project = None
+            raise AnalysisSetupError(
+                f"Failed to load binary {self.binary_path}: {e}"
+            ) from e
 
     def _initialize_project_taint_attributes(self):
         """Initializes custom attributes on the project for taint tracking."""
-        if self.project:
-            self.project.tainted_functions = set()
-            self.project.tainted_memory_regions = {}
-            self.project.tainted_edges = set()
-            self.project.hook_call_id_counter = 0
+        self.project.tainted_functions = set()
+        self.project.tainted_memory_regions = {}
+        self.project.tainted_edges = set()
+        self.project.hook_call_id_counter = 0
 
     def _load_meta_file(self):
         """Loads the meta file for function parameter counts."""
-        if self.project:
-            meta_file_path = self.args.get("meta_file")
-            if meta_file_path:
-                meta_file_path = Path(meta_file_path).resolve()
-                my_logger.info(f"Using meta file: {meta_file_path}")
-            else:
-                meta_file_path = self.binary_path.with_suffix(".meta")
-                my_logger.info(f"Auto-detected meta file path: {meta_file_path}")
+        meta_file_path = self.args.get("meta_file")
+        if meta_file_path:
+            meta_file_path = Path(meta_file_path).resolve()
+            my_logger.info(f"Using meta file: {meta_file_path}")
+        else:
+            meta_file_path = self.binary_path.with_suffix(".meta")
+            my_logger.info(f"Auto-detected meta file path: {meta_file_path}")
 
-            if meta_file_path.exists():
-                my_logger.info(f"Found meta file: {meta_file_path}")
-                self.project.meta_param_counts = parse_meta_file(meta_file_path, my_logger)
-            else:
-                my_logger.warning(f"Meta file not found: {meta_file_path}")
-                self.project.meta_param_counts = {} # Ensure it's initialized
+        if meta_file_path.exists():
+            my_logger.info(f"Found meta file: {meta_file_path}")
+            self.project.meta_param_counts = parse_meta_file(meta_file_path, my_logger)
+        else:
+            my_logger.warning(f"Meta file not found: {meta_file_path}")
+            self.project.meta_param_counts = {}
 
     def _configure_architecture_info(self):
         """Configures architecture-specific information for argument/return registers."""
         self.project.arch_info = {}
         if self.project.arch.name == "AMD64":
             self.project.arch_info["argument_registers"] = [
-                "rdi", "rsi", "rdx", "rcx", "r8", "r9",
+                "rdi",
+                "rsi",
+                "rdx",
+                "rcx",
+                "r8",
+                "r9",
             ]
             self.project.arch_info["return_register"] = "rax"
         elif self.project.arch.name == "X86":
             self.project.arch_info["argument_registers"] = [
-                "eax", "ecx", "edx",
+                "eax",
+                "ecx",
+                "edx",
             ]  # Simplified, actual ABI is stack for cdecl
             self.project.arch_info["return_register"] = "eax"
         else:
@@ -163,9 +177,6 @@ class TaintAnalyzer:
 
     def _build_cfg_and_function_map(self):
         """Builds the Control Flow Graph (CFG) and populates the function information map."""
-        if not self.project:
-            return
-
         my_logger.info("Attempting to build CFG to identify functions...")
         try:
             cfg = self.project.analyses.CFGFast()
@@ -194,10 +205,7 @@ class TaintAnalyzer:
             my_logger.warning("No functions found in the binary's knowledge base.")
 
     def _identify_main_function(self):
-        """Identifies the main function and sets the initial state."""
-        if not self.project:
-            return
-
+        """Identifies the main function and sets the initial state, raises AnalysisSetupError on failure. Initializes simgr."""
         main_symbol = self.project.loader.find_symbol("main")
         if main_symbol:
             my_logger.debug(
@@ -214,13 +222,17 @@ class TaintAnalyzer:
         else:
             if self.project.entry is None:
                 my_logger.error("No entry point could be determined.")
-                return
-            my_logger.warning("Main function symbol not found, using entry point as main.")
+                raise AnalysisSetupError(
+                    "No entry point could be determined for the binary."
+                )
+            my_logger.warning(
+                "Main function symbol not found, using entry point as main."
+            )
             self.main_addr = self.project.entry
 
-        self.main_symbol_name = self.func_info_map.get(
-            self.main_addr, {}
-        ).get("name", f"sub_{self.main_addr:#x}")
+        self.main_symbol_name = self.func_info_map.get(self.main_addr, {}).get(
+            "name", f"sub_{self.main_addr:#x}"
+        )
         my_logger.debug(
             f"Main function address: {self.main_addr:#x}, name: {self.main_symbol_name}"
         )
@@ -230,8 +242,12 @@ class TaintAnalyzer:
             self.simgr = self.project.factory.simulation_manager(initial_state)
             self.simgr.use_technique(DFS())
         except Exception as e:
-            my_logger.error(f"Failed to create initial state at {self.main_addr:#x}: {e}")
-            self.simgr = None
+            my_logger.error(
+                f"Failed to create initial state at {self.main_addr:#x}: {e}"
+            )
+            raise AnalysisSetupError(
+                f"Failed to create initial simulation state: {e}"
+            ) from e
 
     def _is_value_tainted(self, state, value):
         """
@@ -246,10 +262,13 @@ class TaintAnalyzer:
                 if var_name.startswith("taint_source_"):
                     return True
 
-        if not value.symbolic: # This block is for concrete values that might point to tainted memory
+        if not value.symbolic:
             try:
-                addr = state.solver.eval_one(value)  # Ensure single solution
-                for region_addr, region_size in self.project.tainted_memory_regions.items():
+                addr = state.solver.eval_one(value)
+                for (
+                    region_addr,
+                    region_size,
+                ) in self.project.tainted_memory_regions.items():
                     if region_addr <= addr < region_addr + region_size:
                         my_logger.debug(
                             f"Taint check: Value {addr:#x} points into known tainted region {region_addr:#x} (size {region_size})."
@@ -268,7 +287,9 @@ class TaintAnalyzer:
     def _taint_fgets_buffer(self, state, called_func_name):
         """Handles tainting the buffer for fgets specifically."""
         if self.project.arch.name != "AMD64":
-            my_logger.warning(f"fgets tainting not implemented for arch {self.project.arch.name}")
+            my_logger.warning(
+                f"fgets tainting not implemented for arch {self.project.arch.name}"
+            )
             return
 
         try:
@@ -327,7 +348,6 @@ class TaintAnalyzer:
             f"TAINT_SOURCE: Input function {called_func_name} at {called_func_addr:#x} is introducing taint."
         )
 
-        # Delegate to specific tainting logic based on function name
         if called_func_name == "fgets":
             self._taint_fgets_buffer(state, called_func_name)
         # TODO: Add more input functions here (e.g., read, recv) adapting argument registers and logic
@@ -339,15 +359,12 @@ class TaintAnalyzer:
         """
         try:
             ptr_addr = state.solver.eval_one(ptr_value)
-            # Check if the pointer itself points to the base of a known tainted region
             if ptr_addr in self.project.tainted_memory_regions:
                 my_logger.info(
                     f"TAINT_ARG_PTR: Function {called_name} called with {arg_reg_name} pointing to base of tainted region {ptr_addr:#x}."
                 )
                 return True
 
-            # Try to load a byte from the pointed-to address and check if it's tainted
-            # This handles cases where the pointer might be into the middle of a tainted region
             mem_val_check = state.memory.load(ptr_addr, 1, inspect=False)
             if self._is_value_tainted(state, mem_val_check):
                 my_logger.info(
@@ -378,16 +395,16 @@ class TaintAnalyzer:
         try:
             arg_value = getattr(state.regs, arg_reg_name)
 
-            # Check if the argument value itself is tainted (e.g., a symbolic value from input)
             if self._is_value_tainted(state, arg_value):
                 my_logger.info(
                     f"TAINT_ARG: Function {called_name} (at {state.addr:#x}) called with tainted argument in register {arg_reg_name}."
                 )
                 return True
 
-            # If the argument is not directly symbolic, check if it's a pointer to tainted memory
             if not arg_value.symbolic:
-                if self._check_pointer_for_taint(state, arg_value, called_name, arg_reg_name):
+                if self._check_pointer_for_taint(
+                    state, arg_value, called_name, arg_reg_name
+                ):
                     return True
 
         except AttributeError:
@@ -409,7 +426,9 @@ class TaintAnalyzer:
         caller_func_address_str = "N/A"
 
         if not state.callstack:
-            my_logger.debug(f"State {id(state):#x} has no callstack, cannot determine caller for {called_name}.")
+            my_logger.debug(
+                f"State {id(state):#x} has no callstack, cannot determine caller for {called_name}."
+            )
             return caller_name, caller_func_address_str
 
         callstack_frames = list(state.callstack)
@@ -426,7 +445,7 @@ class TaintAnalyzer:
             caller_func_address_str = f"{self.main_addr:#x} (main)"
         else:
             caller_name = f"N/A (shallow stack, current: {called_name})"
-        
+
         return caller_name, caller_func_address_str
 
     def _determine_num_args_to_check(self, called_name, arch_arg_regs):
@@ -452,14 +471,15 @@ class TaintAnalyzer:
         Determines if the hook details should be logged based on user print settings.
         Returns True if logging is enabled for this function, False otherwise.
         """
-        if not func_details: # Always log if no function details are available
+        if not func_details:
             return True
-        
+
         is_libc = func_details["is_plt"] or called_name in COMMON_LIBC_FUNCTIONS
         is_syscall_flag = func_details["is_syscall"]
-        
-        if (is_libc and not self.args.get("show_libc_prints")) or \
-           (is_syscall_flag and not self.args.get("show_syscall_prints")):
+
+        if (is_libc and not self.args.get("show_libc_prints")) or (
+            is_syscall_flag and not self.args.get("show_syscall_prints")
+        ):
             return False
         return True
 
@@ -472,10 +492,12 @@ class TaintAnalyzer:
         called_name = func_details["name"] if func_details else f"sub_{called_addr:#x}"
 
         caller_name, caller_func_address_str = self._get_caller_info(state, called_name)
-        
+
         arguments_are_tainted = False
         arch_arg_regs = self.project.arch_info.get("argument_registers", [])
-        num_args_to_check = self._determine_num_args_to_check(called_name, arch_arg_regs)
+        num_args_to_check = self._determine_num_args_to_check(
+            called_name, arch_arg_regs
+        )
 
         if arch_arg_regs and num_args_to_check > 0:
             for i in range(num_args_to_check):
@@ -487,7 +509,7 @@ class TaintAnalyzer:
         taint_status_msg = " [TAINTED]" if arguments_are_tainted else ""
         if arguments_are_tainted:
             self.project.tainted_functions.add(called_name)
-            if not caller_name.startswith("N/A"): # Only add edge if caller is identified
+            if not caller_name.startswith("N/A"):
                 self.project.tainted_edges.add((caller_name, called_name))
 
         if self._should_log_hook(func_details, called_name):
@@ -498,10 +520,6 @@ class TaintAnalyzer:
 
     def _hook_functions(self):
         """Hooks all identified functions with appropriate taint analysis hooks."""
-        if not self.project or not self.func_info_map:
-            my_logger.warning("Project or function map not initialized, skipping hooking.")
-            return
-
         my_logger.info("Hooking functions with taint analysis logic...")
         hooked_count = 0
         for func_addr, func_details in self.func_info_map.items():
@@ -522,10 +540,6 @@ class TaintAnalyzer:
 
     def run_analysis(self):
         """Executes the symbolic analysis."""
-        if not self.project or not self.simgr or self.main_addr is None:
-            my_logger.error("Analysis prerequisites not met. Exiting.")
-            return
-
         self._hook_functions()
 
         my_logger.info(
@@ -544,6 +558,7 @@ class TaintAnalyzer:
         except Exception as e:
             my_logger.error(f"Unexpected error during simulation: {e}")
             import traceback
+
             traceback.print_exc()
 
         my_logger.info("Simulation complete.")
@@ -554,8 +569,11 @@ class TaintAnalyzer:
         """Reports the outcome of the symbolic simulation."""
         if self.simgr:
             if self.simgr.deadended:
-                # Somehow a problem of angr...
-                #my_logger.info(f"{len(self.simgr.deadended)} states reached a dead end.")
+                """
+                my_logger.info(
+                    f"{len(self.simgr.deadended)} states reached a dead end."
+                )
+                """
                 pass
             if self.simgr.active:
                 my_logger.info(
@@ -570,7 +588,9 @@ class TaintAnalyzer:
 
         if self.args.get("verbose"):
             if self.project and self.project.tainted_edges:
-                my_logger.debug("Tainted call edges (propagation of taint to arguments):")
+                my_logger.debug(
+                    "Tainted call edges (propagation of taint to arguments):"
+                )
                 for caller, callee in sorted(list(self.project.tainted_edges)):
                     print(f"  {caller} -> {callee}")
             else:
@@ -590,7 +610,9 @@ class TaintAnalyzer:
         if self.project and self.func_info_map:
             generate_and_visualize_graph(self.project, self.func_info_map, my_logger)
         else:
-            my_logger.warning("Cannot visualize graph: Project or function map not available.")
+            my_logger.warning(
+                "Cannot visualize graph: Project or function map not available."
+            )
 
 
 if __name__ == "__main__":
@@ -634,6 +656,9 @@ if __name__ == "__main__":
         )
         sys.exit(1)
 
-    analyzer = TaintAnalyzer(args.binary_path, vars(args))
-    if analyzer.project and analyzer.simgr:
+    try:
+        analyzer = TaintAnalyzer(args.binary_path, vars(args))
         analyzer.run_analysis()
+    except AnalysisSetupError as e:
+        my_logger.critical(f"Analysis setup failed: {e}")
+        sys.exit(1)
