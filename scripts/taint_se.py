@@ -260,6 +260,53 @@ class TaintAnalyzer:
                 )
         return False
 
+    def _taint_fgets_buffer(self, state, called_func_name):
+        """Handles tainting the buffer for fgets specifically."""
+        if self.project.arch.name != "AMD64":
+            my_logger.warning(f"fgets tainting not implemented for arch {self.project.arch.name}")
+            return
+
+        try:
+            buf_ptr_val = state.regs.rdi
+            size_val_sym = state.regs.rsi
+
+            try:
+                size_val = state.solver.eval_one(size_val_sym)
+            except angr.errors.SimSolverError:
+                my_logger.warning(
+                    f"Could not concretize size for {called_func_name}, using default 128."
+                )
+                size_val = 128
+
+            buf_addr = state.solver.eval_one(buf_ptr_val)
+
+            taint_size_bytes = min(size_val, 256)
+            if taint_size_bytes <= 0:
+                my_logger.warning(
+                    f"Invalid or zero size for taint from {called_func_name}: {size_val}"
+                )
+                return
+
+            taint_id = (
+                f"taint_source_{called_func_name}_{self.project.hook_call_id_counter}"
+            )
+            symbolic_taint_data = claripy.BVS(taint_id, taint_size_bytes * 8)
+
+            state.memory.store(
+                buf_addr, symbolic_taint_data, endness=self.project.arch.memory_endness
+            )
+            self.project.tainted_memory_regions[buf_addr] = taint_size_bytes
+            my_logger.debug(
+                f"TAINTED: Memory at {buf_addr:#x} (size {taint_size_bytes} bytes) by {called_func_name} with BVS '{taint_id}'."
+            )
+
+        except angr.errors.SimSolverError as e:
+            my_logger.error(
+                f"SimSolverError while tainting buffer for {called_func_name} (likely symbolic pointer/size): {e}"
+            )
+        except Exception as e:
+            my_logger.error(f"Error tainting buffer for {called_func_name}: {e}")
+
     def _input_function_hook(self, state):
         """Hook for input functions to mark their outputs as tainted."""
         self.project.hook_call_id_counter += 1
@@ -275,49 +322,49 @@ class TaintAnalyzer:
             f"TAINT_SOURCE: Input function {called_func_name} at {called_func_addr:#x} is introducing taint."
         )
 
-        # TODO: Handle other input functions and architectures
-        if called_func_name == "fgets" and self.project.arch.name == "AMD64":
-            try:
-                buf_ptr_val = state.regs.rdi
-                size_val_sym = state.regs.rsi
+        # Delegate to specific tainting logic based on function name
+        if called_func_name == "fgets":
+            self._taint_fgets_buffer(state, called_func_name)
+        # TODO: Add more input functions here (e.g., read, recv) adapting argument registers and logic
 
-                try:
-                    size_val = state.solver.eval_one(size_val_sym)
-                except angr.errors.SimSolverError:
-                    my_logger.warning(
-                        f"Could not concretize size for {called_func_name}, using default 128."
-                    )
-                    size_val = 128
-
-                buf_addr = state.solver.eval_one(buf_ptr_val)
-
-                taint_size_bytes = min(size_val, 256)
-                if taint_size_bytes <= 0:
-                    my_logger.warning(
-                        f"Invalid or zero size for taint from {called_func_name}: {size_val}"
-                    )
-                    return
-
-                taint_id = (
-                    f"taint_source_{called_func_name}_{self.project.hook_call_id_counter}"
+    def _check_pointer_for_taint(self, state, ptr_value, called_name, arg_reg_name):
+        """
+        Helper to check if a pointer value points to a tainted memory region or tainted data.
+        Returns True if tainted, False otherwise.
+        """
+        try:
+            ptr_addr = state.solver.eval_one(ptr_value)
+            # Check if the pointer itself points to the base of a known tainted region
+            if ptr_addr in self.project.tainted_memory_regions:
+                my_logger.info(
+                    f"TAINT_ARG_PTR: Function {called_name} called with {arg_reg_name} pointing to base of tainted region {ptr_addr:#x}."
                 )
-                symbolic_taint_data = claripy.BVS(taint_id, taint_size_bytes * 8)
+                return True
 
-                state.memory.store(
-                    buf_addr, symbolic_taint_data, endness=self.project.arch.memory_endness
+            # Try to load a byte from the pointed-to address and check if it's tainted
+            # This handles cases where the pointer might be into the middle of a tainted region
+            mem_val_check = state.memory.load(ptr_addr, 1, inspect=False)
+            if self._is_value_tainted(state, mem_val_check):
+                my_logger.info(
+                    f"TAINT_ARG_PTR: Function {called_name} called with {arg_reg_name} (value {ptr_addr:#x}) pointing to tainted data."
                 )
-                self.project.tainted_memory_regions[buf_addr] = taint_size_bytes
-                my_logger.debug(
-                    f"TAINTED: Memory at {buf_addr:#x} (size {taint_size_bytes} bytes) by {called_func_name} with BVS '{taint_id}'."
-                )
+                return True
+        except (
+            angr.errors.SimMemoryError,
+            angr.errors.SimSegfaultException,
+        ):
+            # Ignore memory errors, likely invalid or unmapped pointers
+            pass
+        except angr.errors.SimSolverError:
+            my_logger.debug(
+                f"Solver error evaluating arg {arg_reg_name} for {called_name} as pointer."
+            )
+        except Exception as e:
+            my_logger.debug(
+                f"Error checking pointer arg {arg_reg_name} for {called_name}: {e}"
+            )
+        return False
 
-            except angr.errors.SimSolverError as e:
-                my_logger.error(
-                    f"SimSolverError while tainting buffer for {called_func_name} (likely symbolic pointer/size): {e}"
-                )
-            except Exception as e:
-                my_logger.error(f"Error tainting buffer for {called_func_name}: {e}")
-    
     def _check_arg_for_taint(self, state, arg_reg_name, called_name):
         """
         Helper method to check if a single argument (direct value or pointed-to memory) is tainted.
@@ -326,44 +373,18 @@ class TaintAnalyzer:
         try:
             arg_value = getattr(state.regs, arg_reg_name)
 
-            # Check if the argument value itself is tainted
+            # Check if the argument value itself is tainted (e.g., a symbolic value from input)
             if self._is_value_tainted(state, arg_value):
                 my_logger.info(
                     f"TAINT_ARG: Function {called_name} (at {state.addr:#x}) called with tainted argument in register {arg_reg_name}."
                 )
                 return True
 
-            # If the argument is not symbolic itself, check if it points to tainted memory
+            # If the argument is not directly symbolic, check if it's a pointer to tainted memory
             if not arg_value.symbolic:
-                try:
-                    ptr_addr = state.solver.eval_one(arg_value)
-                    if ptr_addr in self.project.tainted_memory_regions:
-                        my_logger.info(
-                            f"TAINT_ARG_PTR: Function {called_name} called with {arg_reg_name} pointing to base of tainted region {ptr_addr:#x}."
-                        )
-                        return True
-                    
-                    # Try to load a byte from the pointed-to address and check if it's tainted
-                    mem_val_check = state.memory.load(ptr_addr, 1, inspect=False)
-                    if self._is_value_tainted(state, mem_val_check):
-                        my_logger.info(
-                            f"TAINT_ARG_PTR: Function {called_name} called with {arg_reg_name} (value {ptr_addr:#x}) pointing to tainted data."
-                        )
-                        return True
-                except (
-                    angr.errors.SimMemoryError,
-                    angr.errors.SimSegfaultException,
-                ):
-                    # Ignore memory errors, likely invalid pointers
-                    pass
-                except angr.errors.SimSolverError:
-                    my_logger.debug(
-                        f"Solver error evaluating arg {arg_reg_name} for {called_name} as pointer."
-                    )
-                except Exception as e:
-                    my_logger.debug(
-                        f"Error checking pointer arg {arg_reg_name} for {called_name}: {e}"
-                    )
+                if self._check_pointer_for_taint(state, arg_value, called_name, arg_reg_name):
+                    return True
+
         except AttributeError:
             my_logger.warning(
                 f"Register {arg_reg_name} not found for arch {self.project.arch.name} checking args for {called_name}."
@@ -374,19 +395,17 @@ class TaintAnalyzer:
             )
         return False
 
-    def _generic_function_hook(self, state):
-        """Hook for general functions to check arguments for taint."""
-        self.project.hook_call_id_counter += 1
-
-        called_addr = state.addr
-        func_details = self.func_info_map.get(called_addr)
-        called_name = func_details["name"] if func_details else f"sub_{called_addr:#x}"
-
+    def _get_caller_info(self, state, called_name):
+        """
+        Determines the caller's name and address from the callstack.
+        Returns (caller_name, caller_func_address_str).
+        """
         caller_name = "N/A (e.g., initial entry or no prior frame)"
         caller_func_address_str = "N/A"
+
         if not state.callstack:
-            my_logger.warning(f"State {id(state):#x} has no callstack, cannot determine caller.")
-            return
+            my_logger.debug(f"State {id(state):#x} has no callstack, cannot determine caller for {called_name}.")
+            return caller_name, caller_func_address_str
 
         callstack_frames = list(state.callstack)
         if len(callstack_frames) > 1:
@@ -402,11 +421,14 @@ class TaintAnalyzer:
             caller_func_address_str = f"{self.main_addr:#x} (main)"
         else:
             caller_name = f"N/A (shallow stack, current: {called_name})"
+        
+        return caller_name, caller_func_address_str
 
-        arguments_are_tainted = False
-        arch_arg_regs = self.project.arch_info.get("argument_registers", [])
-
-        num_args_to_check = 0
+    def _determine_num_args_to_check(self, called_name, arch_arg_regs):
+        """
+        Determines how many arguments to check based on meta file or default.
+        Returns the number of arguments.
+        """
         if called_name in self.project.meta_param_counts:
             num_args_to_check_from_meta = self.project.meta_param_counts[called_name]
             num_args_to_check = min(num_args_to_check_from_meta, len(arch_arg_regs))
@@ -418,6 +440,37 @@ class TaintAnalyzer:
             my_logger.debug(
                 f"No meta param count for {called_name}, defaulting to check {num_args_to_check} registers."
             )
+        return num_args_to_check
+
+    def _should_log_hook(self, func_details, called_name):
+        """
+        Determines if the hook details should be logged based on user print settings.
+        Returns True if logging is enabled for this function, False otherwise.
+        """
+        if not func_details: # Always log if no function details are available
+            return True
+        
+        is_libc = func_details["is_plt"] or called_name in COMMON_LIBC_FUNCTIONS
+        is_syscall_flag = func_details["is_syscall"]
+        
+        if (is_libc and not self.args.get("show_libc_prints")) or \
+           (is_syscall_flag and not self.args.get("show_syscall_prints")):
+            return False
+        return True
+
+    def _generic_function_hook(self, state):
+        """Hook for general functions to check arguments for taint."""
+        self.project.hook_call_id_counter += 1
+
+        called_addr = state.addr
+        func_details = self.func_info_map.get(called_addr)
+        called_name = func_details["name"] if func_details else f"sub_{called_addr:#x}"
+
+        caller_name, caller_func_address_str = self._get_caller_info(state, called_name)
+        
+        arguments_are_tainted = False
+        arch_arg_regs = self.project.arch_info.get("argument_registers", [])
+        num_args_to_check = self._determine_num_args_to_check(called_name, arch_arg_regs)
 
         if arch_arg_regs and num_args_to_check > 0:
             for i in range(num_args_to_check):
@@ -429,19 +482,10 @@ class TaintAnalyzer:
         taint_status_msg = " [TAINTED]" if arguments_are_tainted else ""
         if arguments_are_tainted:
             self.project.tainted_functions.add(called_name)
-            if not caller_name.startswith("N/A"):
+            if not caller_name.startswith("N/A"): # Only add edge if caller is identified
                 self.project.tainted_edges.add((caller_name, called_name))
 
-        do_print = True
-        if func_details:
-            is_libc = func_details["is_plt"] or called_name in COMMON_LIBC_FUNCTIONS
-            is_syscall_flag = func_details["is_syscall"]
-            if (is_libc and not self.args.get("show_libc_prints")) or (
-                is_syscall_flag and not self.args.get("show_syscall_prints")
-            ):
-                do_print = False
-
-        if do_print:
+        if self._should_log_hook(func_details, called_name):
             num_active_paths_total = len(self.simgr.active) if self.simgr else 0
             my_logger.debug(
                 f"HOOK #{self.project.hook_call_id_counter:03d} :: CALLED: {called_name}{taint_status_msg} (at 0x{called_addr:x}) :: FROM: {caller_name} (at {caller_func_address_str}) :: StateID: {id(state):#x} :: ActivePaths: {num_active_paths_total}"
@@ -505,7 +549,9 @@ class TaintAnalyzer:
         """Reports the outcome of the symbolic simulation."""
         if self.simgr:
             if self.simgr.deadended:
-                my_logger.info(f"{len(self.simgr.deadended)} states reached a dead end.")
+                # Somehow a problem of angr...
+                #my_logger.info(f"{len(self.simgr.deadended)} states reached a dead end.")
+                pass
             if self.simgr.active:
                 my_logger.info(
                     f"{len(self.simgr.active)} states are still active (DFS might have been limited or interrupted)."
@@ -517,21 +563,22 @@ class TaintAnalyzer:
                         f"Error {i + 1}: State at {error_record.state.addr:#x} failed with: {error_record.error}"
                     )
 
-        if self.project and self.project.tainted_edges:
-            my_logger.info("\nTainted call edges (propagation of taint to arguments):")
-            for caller, callee in sorted(list(self.project.tainted_edges)):
-                print(f"  {caller} -> {callee}")
-        else:
-            my_logger.info("\nNo tainted call edges were recorded.")
+        if self.args.get("verbose"):
+            if self.project and self.project.tainted_edges:
+                my_logger.debug("Tainted call edges (propagation of taint to arguments):")
+                for caller, callee in sorted(list(self.project.tainted_edges)):
+                    print(f"  {caller} -> {callee}")
+            else:
+                my_logger.debug("No tainted call edges were recorded.")
 
-        my_logger.info("\nFunctions that processed/received tainted data:")
-        if self.project and self.project.tainted_functions:
-            for func_name in sorted(list(self.project.tainted_functions)):
-                print(f"  - {func_name}")
-        else:
-            my_logger.info(
-                "No functions were identified as processing or receiving tainted data."
-            )
+            my_logger.debug("Functions that processed/received tainted data:")
+            if self.project and self.project.tainted_functions:
+                for func_name in sorted(list(self.project.tainted_functions)):
+                    print(f"  - {func_name}")
+            else:
+                my_logger.debug(
+                    "No functions were identified as processing or receiving tainted data."
+                )
 
     def _visualize_graph(self):
         """Generates and visualizes the call graph."""
