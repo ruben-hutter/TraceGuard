@@ -5,12 +5,17 @@ def parse_meta_file(meta_path, my_logger):
     """
     Parses a meta file to extract function names and their parameter counts.
 
+    The meta file is expected to contain function prototypes, one per line.
+    Lines starting with '//' or '#' are treated as comments and ignored.
+    Trailing semicolons are removed from function prototypes.
+
     Args:
         meta_path (Path or str): Path to the meta file.
         my_logger (Logger): Logger instance for logging messages.
 
     Returns:
-        dict: A dictionary mapping function names to their parameter counts.
+        dict: A dictionary mapping function names (str) to their parameter counts (int).
+              Returns an empty dictionary if the file is not found or parsing fails.
     """
     meta_path = Path(meta_path)
 

@@ -4,8 +4,19 @@ from schnauzer import VisualizationClient
 
 def generate_and_visualize_graph(project, func_info_map, my_logger):
     """
-    Builds a call graph and sends it to the Schnauzer client for visualization.
-    Tainted nodes and edges are colored red, others are blue.
+    Builds a call graph from the Angr project's knowledge base and sends it to the
+    Schnauzer visualization client for display. Tainted nodes (functions that
+    processed tainted data) and tainted edges (taint propagation through calls)
+    are colored red, while others are blue. The graph is filtered to show
+    only the connected component containing the main function.
+
+    Args:
+        project (angr.Project): The Angr project instance containing analysis results
+                                (e.g., `project.tainted_functions`, `project.tainted_edges`,
+                                `project.kb.callgraph`).
+        func_info_map (dict): A dictionary mapping function addresses to their details,
+                              including the function name.
+        my_logger (Logger): Logger instance for logging messages.
     """
     my_logger.info("Generating call graph for visualization...")
     G = nx.DiGraph()
@@ -61,11 +72,12 @@ def generate_and_visualize_graph(project, func_info_map, my_logger):
             )
             G.add_edge(caller_name, callee_name, type=edge_type)
 
-    
     # Filtering Logic for Disconnected Components
     main_node_name = func_info_map.get(project.entry, {}).get("name", "main")
     if not G.has_node(main_node_name):
-        my_logger.warning(f"Main node '{main_node_name}' not found in the graph. Cannot filter by main component.")
+        my_logger.warning(
+            f"Main node '{main_node_name}' not found in the graph. Cannot filter by main component."
+        )
     else:
         # Find the weakly connected components
         components = list(nx.weakly_connected_components(G))
@@ -74,14 +86,18 @@ def generate_and_visualize_graph(project, func_info_map, my_logger):
             if main_node_name in component:
                 main_component_nodes = component
                 break
-        
+
         if main_component_nodes:
             # Create a subgraph containing only the main component
             filtered_G = G.subgraph(main_component_nodes).copy()
-            my_logger.debug(f"Filtered graph to show only the main component (containing '{main_node_name}'). Original nodes: {len(G.nodes)}, Filtered nodes: {len(filtered_G.nodes)}")
-            G = filtered_G # Replace the original graph with the filtered one
+            my_logger.debug(
+                f"Filtered graph to show only the main component (containing '{main_node_name}'). Original nodes: {len(G.nodes)}, Filtered nodes: {len(filtered_G.nodes)}"
+            )
+            G = filtered_G  # Replace the original graph with the filtered one
         else:
-            my_logger.warning(f"Could not find a connected component containing '{main_node_name}'. No filtering applied.")
+            my_logger.warning(
+                f"Could not find a connected component containing '{main_node_name}'. No filtering applied."
+            )
 
     my_logger.debug("Sending graph to Schnauzer visualization client...")
     try:

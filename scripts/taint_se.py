@@ -66,9 +66,28 @@ class TaintAnalyzer:
     """
     A class to encapsulate the Angr project setup, taint analysis logic,
     and simulation management.
+
+    Attributes:
+        binary_path (Path): The path to the binary file to analyze.
+        args (dict): A dictionary of arguments passed to the analyzer.
+        project (angr.Project): The Angr project instance.
+        func_info_map (dict): A dictionary mapping function addresses to their details.
+        main_addr (int): The rebased address of the main function.
+        main_symbol_name (str): The name of the main function.
+        simgr (angr.SimulationManager): The Angr simulation manager.
     """
 
     def __init__(self, binary_path, args):
+        """
+        Initializes the TaintAnalyzer.
+
+        Args:
+            binary_path (str): Path to the binary to analyze.
+            args (dict): Dictionary of arguments for the analysis (e.g., verbose, debug, meta_file).
+
+        Raises:
+            AnalysisSetupError: If there's an issue loading the project or identifying the main function.
+        """
         self.binary_path = Path(binary_path).resolve()
         self.args = args
         self.project = None
@@ -109,7 +128,12 @@ class TaintAnalyzer:
         my_logger.propagate = False
 
     def _load_project(self):
-        """Loads the binary into an Angr project, raises AnalysisSetupError on failure."""
+        """
+        Loads the binary into an Angr project.
+
+        Raises:
+            AnalysisSetupError: If the binary file is not found or loading fails.
+        """
         try:
             self.project = angr.Project(self.binary_path, auto_load_libs=False)
             my_logger.info(f"Successfully loaded binary: {self.binary_path}")
@@ -125,14 +149,25 @@ class TaintAnalyzer:
             ) from e
 
     def _initialize_project_taint_attributes(self):
-        """Initializes custom attributes on the project for taint tracking."""
+        """
+        Initializes custom attributes on the project for taint tracking.
+        These attributes include:
+        - `project.tainted_functions`: A set of function names identified as processing tainted data.
+        - `project.tainted_memory_regions`: A dictionary mapping addresses to sizes of tainted memory regions.
+        - `project.tainted_edges`: A set of (caller, callee) tuples representing tainted call edges.
+        - `project.hook_call_id_counter`: A counter for unique hook call IDs.
+        """
         self.project.tainted_functions = set()
         self.project.tainted_memory_regions = {}
         self.project.tainted_edges = set()
         self.project.hook_call_id_counter = 0
 
     def _load_meta_file(self):
-        """Loads the meta file for function parameter counts."""
+        """
+        Loads the meta file for function parameter counts.
+        If `meta_file` argument is provided, it uses that path. Otherwise, it attempts
+        to auto-detect a `.meta` file alongside the binary.
+        """
         meta_file_path = self.args.get("meta_file")
         if meta_file_path:
             meta_file_path = Path(meta_file_path).resolve()
@@ -149,7 +184,10 @@ class TaintAnalyzer:
             self.project.meta_param_counts = {}
 
     def _configure_architecture_info(self):
-        """Configures architecture-specific information for argument/return registers."""
+        """
+        Configures architecture-specific information for argument and return registers.
+        Currently supports AMD64 and X86.
+        """
         self.project.arch_info = {}
         if self.project.arch.name == "AMD64":
             self.project.arch_info["argument_registers"] = [
@@ -176,7 +214,10 @@ class TaintAnalyzer:
             self.project.arch_info["return_register"] = ""
 
     def _build_cfg_and_function_map(self):
-        """Builds the Control Flow Graph (CFG) and populates the function information map."""
+        """
+        Builds the Control Flow Graph (CFG) and populates the function information map.
+        The `func_info_map` stores details like function name, whether it's PLT, syscall, or SimProcedure.
+        """
         my_logger.info("Attempting to build CFG to identify functions...")
         try:
             cfg = self.project.analyses.CFGFast()
@@ -205,7 +246,13 @@ class TaintAnalyzer:
             my_logger.warning("No functions found in the binary's knowledge base.")
 
     def _identify_main_function(self):
-        """Identifies the main function and sets the initial state, raises AnalysisSetupError on failure. Initializes simgr."""
+        """
+        Identifies the main function, sets the initial state for symbolic execution, and initializes the simulation manager.
+
+        Raises:
+            AnalysisSetupError: If the main function or entry point cannot be determined,
+                                or if the initial simulation state cannot be created.
+        """
         main_symbol = self.project.loader.find_symbol("main")
         if main_symbol:
             my_logger.debug(
@@ -253,6 +300,13 @@ class TaintAnalyzer:
         """
         Check if a value is tainted by looking for symbolic variables or
         checking if it points to a known tainted memory region.
+
+        Args:
+            state (angr.sim_state.SimState): The current simulation state.
+            value (claripy.ast.Base): The value to check for taint.
+
+        Returns:
+            bool: True if the value is tainted, False otherwise.
         """
         if not hasattr(value, "symbolic") or not value.symbolic:
             return False
@@ -285,7 +339,15 @@ class TaintAnalyzer:
         return False
 
     def _taint_fgets_buffer(self, state, called_func_name):
-        """Handles tainting the buffer for fgets specifically."""
+        """
+        Handles tainting the buffer for fgets specifically.
+        It creates a symbolic variable representing the tainted input and stores it
+        in the memory region pointed to by the buffer argument.
+
+        Args:
+            state (angr.sim_state.SimState): The current simulation state.
+            called_func_name (str): The name of the function that was called (e.g., "fgets").
+        """
         if self.project.arch.name != "AMD64":
             my_logger.warning(
                 f"fgets tainting not implemented for arch {self.project.arch.name}"
@@ -334,7 +396,14 @@ class TaintAnalyzer:
             my_logger.error(f"Error tainting buffer for {called_func_name}: {e}")
 
     def _input_function_hook(self, state):
-        """Hook for input functions to mark their outputs as tainted."""
+        """
+        Hook for input functions to mark their outputs as tainted.
+        This function increments the hook call counter, adds the called function
+        to the set of tainted functions, and specifically handles fgets buffer tainting.
+
+        Args:
+            state (angr.sim_state.SimState): The current simulation state.
+        """
         self.project.hook_call_id_counter += 1
 
         called_func_addr = state.addr
@@ -355,7 +424,15 @@ class TaintAnalyzer:
     def _check_pointer_for_taint(self, state, ptr_value, called_name, arg_reg_name):
         """
         Helper to check if a pointer value points to a tainted memory region or tainted data.
-        Returns True if tainted, False otherwise.
+
+        Args:
+            state (angr.sim_state.SimState): The current simulation state.
+            ptr_value (claripy.ast.Base): The pointer value to check.
+            called_name (str): The name of the function being called.
+            arg_reg_name (str): The name of the register holding the pointer argument.
+
+        Returns:
+            bool: True if the pointer or the data it points to is tainted, False otherwise.
         """
         try:
             ptr_addr = state.solver.eval_one(ptr_value)
@@ -390,7 +467,14 @@ class TaintAnalyzer:
     def _check_arg_for_taint(self, state, arg_reg_name, called_name):
         """
         Helper method to check if a single argument (direct value or pointed-to memory) is tainted.
-        Returns True if tainted, False otherwise.
+
+        Args:
+            state (angr.sim_state.SimState): The current simulation state.
+            arg_reg_name (str): The name of the register holding the argument.
+            called_name (str): The name of the function being called.
+
+        Returns:
+            bool: True if the argument is tainted, False otherwise.
         """
         try:
             arg_value = getattr(state.regs, arg_reg_name)
@@ -420,7 +504,13 @@ class TaintAnalyzer:
     def _get_caller_info(self, state, called_name):
         """
         Determines the caller's name and address from the callstack.
-        Returns (caller_name, caller_func_address_str).
+
+        Args:
+            state (angr.sim_state.SimState): The current simulation state.
+            called_name (str): The name of the currently called function.
+
+        Returns:
+            tuple: A tuple containing (caller_name, caller_func_address_str).
         """
         caller_name = "N/A (e.g., initial entry or no prior frame)"
         caller_func_address_str = "N/A"
@@ -451,7 +541,13 @@ class TaintAnalyzer:
     def _determine_num_args_to_check(self, called_name, arch_arg_regs):
         """
         Determines how many arguments to check based on meta file or default.
-        Returns the number of arguments.
+
+        Args:
+            called_name (str): The name of the function being called.
+            arch_arg_regs (list): A list of architecture-specific argument registers.
+
+        Returns:
+            int: The number of arguments to check for taint.
         """
         if called_name in self.project.meta_param_counts:
             num_args_to_check_from_meta = self.project.meta_param_counts[called_name]
@@ -468,8 +564,15 @@ class TaintAnalyzer:
 
     def _should_log_hook(self, func_details, called_name):
         """
-        Determines if the hook details should be logged based on user print settings.
-        Returns True if logging is enabled for this function, False otherwise.
+        Determines if the hook details should be logged based on user print settings
+        (e.g., `--show-libc-prints`, `--show-syscall-prints`).
+
+        Args:
+            func_details (dict): Details about the hooked function.
+            called_name (str): The name of the called function.
+
+        Returns:
+            bool: True if logging is enabled for this function, False otherwise.
         """
         if not func_details:
             return True
@@ -484,7 +587,15 @@ class TaintAnalyzer:
         return True
 
     def _generic_function_hook(self, state):
-        """Hook for general functions to check arguments for taint."""
+        """
+        Hook for general functions to check arguments for taint.
+        This hook is applied to all user-defined and non-input library functions.
+        It identifies if any arguments are tainted and updates `project.tainted_functions`
+        and `project.tainted_edges` accordingly.
+
+        Args:
+            state (angr.sim_state.SimState): The current simulation state.
+        """
         self.project.hook_call_id_counter += 1
 
         called_addr = state.addr
@@ -519,7 +630,11 @@ class TaintAnalyzer:
             )
 
     def _hook_functions(self):
-        """Hooks all identified functions with appropriate taint analysis hooks."""
+        """
+        Hooks all identified functions with appropriate taint analysis hooks.
+        Input functions get a special hook to mark their outputs as tainted,
+        while other functions get a generic hook to check for tainted arguments.
+        """
         my_logger.info("Hooking functions with taint analysis logic...")
         hooked_count = 0
         for func_addr, func_details in self.func_info_map.items():
@@ -539,7 +654,10 @@ class TaintAnalyzer:
         my_logger.info(f"Hooked {hooked_count} functions for taint analysis.")
 
     def run_analysis(self):
-        """Executes the symbolic analysis."""
+        """
+        Executes the symbolic analysis by hooking functions and running the simulation manager.
+        It also reports the simulation results and visualizes the call graph.
+        """
         self._hook_functions()
 
         my_logger.info(
@@ -566,7 +684,12 @@ class TaintAnalyzer:
         self._visualize_graph()
 
     def _report_simulation_results(self):
-        """Reports the outcome of the symbolic simulation."""
+        """
+        Reports the outcome of the symbolic simulation, including information about
+        deadended, active, and errored states.
+        If verbose mode is enabled, it also prints tainted call edges and functions
+        that processed tainted data.
+        """
         if self.simgr:
             if self.simgr.deadended:
                 """
@@ -606,7 +729,10 @@ class TaintAnalyzer:
                 )
 
     def _visualize_graph(self):
-        """Generates and visualizes the call graph."""
+        """
+        Generates and visualizes the call graph using the Schnauzer visualization client.
+        Tainted nodes and edges are colored red, others are blue.
+        """
         if self.project and self.func_info_map:
             generate_and_visualize_graph(self.project, self.func_info_map, my_logger)
         else:
