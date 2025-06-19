@@ -2,15 +2,10 @@ import subprocess
 import time
 import webbrowser
 import sys
+from pathlib import Path
 
-# --- Configuration ---
 # Path to your analysis script
-ANALYSIS_SCRIPT = "scripts/main.py"
-# Path to the binary you want to analyze
-BINARY_PATH = "examples/program1"  # <-- IMPORTANT: Change this to your target binary
-# Arguments for your analysis script
-# Add other arguments like --meta, --verbose, etc.
-ANALYSIS_ARGS = [BINARY_PATH, "--meta", "examples/program1.meta", "--verbose"]
+ANALYSIS_SCRIPT = "scripts/taint_se.py"
 # URL for the Schnauzer web UI
 VIZ_URL = "http://127.0.0.1:8080"
 
@@ -20,11 +15,25 @@ def main():
     Orchestrates starting the Schnauzer server, running the analysis,
     and cleaning up afterwards.
     """
+    if len(sys.argv) < 2:
+        print("Usage: python scripts/main.py <path_to_binary> [taint_se.py_args...]", file=sys.stderr)
+        sys.exit(1)
+
+    binary_path = Path(sys.argv[1])
+
+    if not binary_path.exists():
+        print(f"Error: The specified binary path '{binary_path}' does not exist.", file=sys.stderr)
+        sys.exit(1)
+
+    # Collect additional arguments for the analysis script
+    analysis_args = sys.argv[2:]
+
+    command = [sys.executable, ANALYSIS_SCRIPT, str(binary_path)] + analysis_args
+
     server_process = None
     try:
         # 1. Start the schnauzer-server in the background
         print("Starting schnauzer-server...")
-        # Use shell=True on Windows if 'schnauzer-server' is a .bat or .cmd file
         server_process = subprocess.Popen(["schnauzer-server"])
 
         # 2. Wait for the server to initialize
@@ -36,24 +45,19 @@ def main():
         webbrowser.open(VIZ_URL)
 
         # 4. Run your analysis script
-        print(f"Running analysis on {BINARY_PATH}...")
-        command = [sys.executable, ANALYSIS_SCRIPT] + ANALYSIS_ARGS
-        # The analysis script runs in the foreground.
-        # The wrapper will wait here until it completes.
+        print(f"Running analysis on {binary_path}...")
         subprocess.run(command, check=True)
 
-        print("Analysis finished successfully.")
-
     except subprocess.CalledProcessError:
-        print("\nAnalysis script failed.", file=sys.stderr)
+        print("Analysis script failed.", file=sys.stderr)
     except FileNotFoundError:
-        print("\nError: 'schnauzer-server' command not found.", file=sys.stderr)
+        print("Error: 'schnauzer-server' command not found.", file=sys.stderr)
         print(
             "Please ensure Schnauzer is installed and in your system's PATH.",
             file=sys.stderr,
         )
     except Exception as e:
-        print(f"\nAn unexpected error occurred: {e}", file=sys.stderr)
+        print(f"An unexpected error occurred: {e}", file=sys.stderr)
     finally:
         # 5. Stop the server process
         if server_process:
