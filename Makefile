@@ -9,7 +9,7 @@ TARGETS_BIN = $(TARGETS_SRC:.c=)
 SCRIPTS_DIR = scripts
 PYTHON_ANALYZER = $(SCRIPTS_DIR)/main.py
 
-all: format $(TARGETS_BIN)
+all: $(TARGETS_BIN)
 
 $(TARGETS_DIR)/%: $(TARGETS_DIR)/%.c
 	$(CC) $(CFLAGS) $< -o $@
