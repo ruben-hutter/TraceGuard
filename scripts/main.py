@@ -4,7 +4,7 @@ import webbrowser
 import sys
 from pathlib import Path
 
-# Path to your analysis script
+# Path to analysis script
 ANALYSIS_SCRIPT = "scripts/taint_se.py"
 # URL for the Schnauzer web UI
 VIZ_URL = "http://127.0.0.1:8080"
@@ -25,16 +25,14 @@ def main():
         print(f"Error: The specified binary path '{binary_path}' does not exist.", file=sys.stderr)
         sys.exit(1)
 
-    # Collect additional arguments for the analysis script
     analysis_args = sys.argv[2:]
-
     command = [sys.executable, ANALYSIS_SCRIPT, str(binary_path)] + analysis_args
 
     server_process = None
     try:
         # 1. Start the schnauzer-server in the background
         print("Starting schnauzer-server...")
-        server_process = subprocess.Popen(["schnauzer-server"])
+        server_process = subprocess.Popen(["schnauzer-server"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
         # 2. Wait for the server to initialize
         print("Waiting for server to start...")
