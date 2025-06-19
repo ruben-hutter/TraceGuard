@@ -32,7 +32,7 @@ def main():
     try:
         # 1. Start the schnauzer-server in the background
         print("Starting schnauzer-server...")
-        server_process = subprocess.Popen(["schnauzer-server"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        server_process = subprocess.Popen(["schnauzer-server"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         # 2. Wait for the server to initialize
         print("Waiting for server to start...")
