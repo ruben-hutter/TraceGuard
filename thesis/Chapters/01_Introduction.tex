@@ -1,9 +1,40 @@
 % !TEX root = ../Thesis.tex
 \chapter{Introduction}
 
-Motivation: Why symbolic execution needs improvement (Why do I search for vulnerabilities?)
+Symbolic execution is a powerful program analysis technique used for vulnerability discovery and test case generation. It explores program execution paths by using symbolic variables instead of concrete inputs. This allows for a more comprehensive analysis compared to traditional testing methods.
 
-\section{Problem Statement / Goals and Contributions}
+\section{Motivation: Addressing the Path Explosion Problem}
+
+A key challenge in symbolic execution is the "path explosion problem". As program complexity increases, the number of possible execution paths grows exponentially, making analysis computationally expensive and time-consuming. This limits the scalability of symbolic execution to larger, real-world applications.
+
+\section{Problem Statement}
+
+This thesis addresses the inefficiency of symbolic execution when applied to large software. Existing approaches often explore all paths indiscriminately, wasting resources on non-critical code sections. A more targeted approach is needed to focus the analysis on potentially vulnerable areas.
+
+\section{Goals and Contributions}
+
+This work aims to improve the efficiency of symbolic execution by integrating taint analysis and path prioritization techniques. The main contributions are:
+
+\begin{itemize}
+    \item \textbf{Improved Efficiency:} Reducing the impact of the path explosion problem by prioritizing relevant paths.
+    \item \textbf{Taint Analysis Integration:} Using taint analysis to track user-controlled inputs and memory allocations, focusing on security-critical data.
+    \item \textbf{Path Prioritization:} Guiding the symbolic execution engine (e.g., Angr) towards paths influenced by tainted data, and ignoring irrelevant paths.
+    \item \textbf{Evaluation of Effectiveness:} Assessing the performance and vulnerability detection capabilities of the optimized approach.
+\end{itemize}
+
+This thesis presents a novel approach to optimizing symbolic execution, providing a more efficient method for security-focused program analysis.
 
 \section{Structure of the Thesis}
 
+The remainder of this thesis is structured as follows:
+
+\begin{itemize}
+    \item \textbf{Chapter 2: Background} - Foundational concepts, including symbolic execution, taint analysis, and the Angr framework.
+    \item \textbf{Chapter 3: Conceptual Implementation} - Theoretical framework and prioritization strategies.
+    \item \textbf{Chapter 4: Practical Implementation} - Technical details, tools, and libraries used.
+    \item \textbf{Chapter 5: Evaluation} - Experimental setup and performance results.
+    \item \textbf{Chapter 6: Conclusion} - Key findings and their implications.
+    \item \textbf{Chapter 7: Future Work} - Potential extensions and future research directions.
+    \item \textbf{Chapter 8: Related Work} - Existing research in symbolic execution and related areas.
+     \item \textbf{Chapter 9: Usage of AI} - Documentation of AI-supported technology used in the thesis.
+\end{itemize}
