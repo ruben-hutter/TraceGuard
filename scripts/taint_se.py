@@ -5,6 +5,7 @@ from pathlib import Path
 import angr
 import claripy
 from angr.exploration_techniques import DFS
+from taint_exploration import TaintGuidedExploration
 from meta import parse_meta_file
 from visualize import generate_and_visualize_graph
 
@@ -95,6 +96,7 @@ class TaintAnalyzer:
         self.main_addr = None
         self.main_symbol_name = None
         self.simgr = None
+        self.cfg = None
 
         self._configure_logging()
 
@@ -220,8 +222,8 @@ class TaintAnalyzer:
         """
         my_logger.info("Attempting to build CFG to identify functions...")
         try:
-            cfg = self.project.analyses.CFGFast()
-            cfg.normalize()
+            self.cfg = self.project.analyses.CFGFast()
+            self.cfg.normalize()
             my_logger.info(
                 f"CFG analysis complete. Functions found in kb: {len(self.project.kb.functions)}"
             )
@@ -287,7 +289,17 @@ class TaintAnalyzer:
         try:
             initial_state = self.project.factory.full_init_state(addr=self.main_addr)
             self.simgr = self.project.factory.simulation_manager(initial_state)
+
+            self.simgr.use_technique(angr.exploration_techniques.LengthLimiter(1000))
+            if self.cfg:
+                self.simgr.use_technique(angr.exploration_techniques.LoopSeer(cfg=self.cfg))
+            else:
+                my_logger.warning(
+                    "No CFG found for LoopSeer, proceeding without it."
+                )
             self.simgr.use_technique(DFS())
+            #self.simgr.use_technique(TaintGuidedExploration(self.project, my_logger))
+
         except Exception as e:
             my_logger.error(
                 f"Failed to create initial state at {self.main_addr:#x}: {e}"
@@ -622,6 +634,8 @@ class TaintAnalyzer:
             self.project.tainted_functions.add(called_name)
             if not caller_name.startswith("N/A"):
                 self.project.tainted_edges.add((caller_name, called_name))
+            state.globals["tainted_path_active"] = True
+            my_logger.debug(f"State {id(state):#x} marked as tainted_path_active.")
 
         if self._should_log_hook(func_details, called_name):
             num_active_paths_total = len(self.simgr.active) if self.simgr else 0
@@ -664,7 +678,7 @@ class TaintAnalyzer:
             f"Starting symbolic execution from '{self.main_symbol_name}' at {self.main_addr:#x}"
         )
         my_logger.info(
-            f"Starting simulation with {len(self.simgr.active)} initial state(s). Using DFS."
+            f"Starting simulation with {len(self.simgr.active)} initial state(s)."
         )
 
         try:
@@ -700,7 +714,7 @@ class TaintAnalyzer:
                 pass
             if self.simgr.active:
                 my_logger.info(
-                    f"{len(self.simgr.active)} states are still active (DFS might have been limited or interrupted)."
+                    f"{len(self.simgr.active)} states are still active."
                 )
             if self.simgr.errored:
                 my_logger.info(f"{len(self.simgr.errored)} states encountered errors.")
