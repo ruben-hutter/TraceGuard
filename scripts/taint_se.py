@@ -298,7 +298,9 @@ class TaintAnalyzer:
                     "No CFG found for LoopSeer, proceeding without it."
                 )
             self.simgr.use_technique(DFS())
-            #self.simgr.use_technique(TaintGuidedExploration(self.project, my_logger))
+
+            self.taint_exploration = TaintGuidedExploration(logger=my_logger, project=self.project)
+            self.simgr.use_technique(self.taint_exploration)
 
         except Exception as e:
             my_logger.error(
@@ -428,6 +430,11 @@ class TaintAnalyzer:
         my_logger.info(
             f"TAINT_SOURCE: Input function {called_func_name} at {called_func_addr:#x} is introducing taint."
         )
+
+        self._update_state_taint_score(state, called_func_name, True)
+
+        current_score = state.globals.get("taint_score", 0)
+        state.globals["taint_score"] = current_score + 5.0
 
         if called_func_name == "fgets":
             self._taint_fgets_buffer(state, called_func_name)
@@ -634,8 +641,8 @@ class TaintAnalyzer:
             self.project.tainted_functions.add(called_name)
             if not caller_name.startswith("N/A"):
                 self.project.tainted_edges.add((caller_name, called_name))
-            state.globals["tainted_path_active"] = True
-            my_logger.debug(f"State {id(state):#x} marked as tainted_path_active.")
+
+        self._update_state_taint_score(state, called_name, arguments_are_tainted)
 
         if self._should_log_hook(func_details, called_name):
             num_active_paths_total = len(self.simgr.active) if self.simgr else 0
@@ -682,7 +689,38 @@ class TaintAnalyzer:
         )
 
         try:
-            self.simgr.run()
+            # ENHANCED: Add step-by-step debugging
+            step_count = 0
+            max_steps = 100  # Prevent infinite loops during debugging
+            
+            while self.simgr.active and step_count < max_steps:
+                step_count += 1
+                prev_active = len(self.simgr.active)
+                
+                # Step once
+                self.simgr.step()
+                
+                # Debug info
+                if step_count % 10 == 0 or self.args.get("debug"):
+                    my_logger.debug(f"Step {step_count}: {prev_active} -> {len(self.simgr.active)} active states")
+                    my_logger.debug(f"  Stashes: active={len(self.simgr.active)}, "
+                                   f"deadended={len(self.simgr.deadended)}, "
+                                   f"errored={len(self.simgr.errored)}")
+                    
+                    # Show taint scores for active states
+                    if self.args.get("debug") and hasattr(self, 'taint_exploration'):
+                        for i, state in enumerate(self.simgr.active[:3]):  # Show first 3
+                            score = self.taint_exploration.state_scores.get(id(state), 0)
+                            my_logger.debug(f"    State {i}: score={score:.2f}, addr={state.addr:#x}")
+                
+                # Break if no more active states
+                if not self.simgr.active:
+                    my_logger.info(f"No more active states after {step_count} steps")
+                    break
+            
+            if step_count >= max_steps:
+                my_logger.warning(f"Stopped after {max_steps} steps to prevent infinite loop")
+
         except angr.errors.AngrTracerError as e:
             my_logger.warning(
                 f"AngrTracerError during simulation: {e}. Results may be partial."
@@ -723,24 +761,70 @@ class TaintAnalyzer:
                         f"Error {i + 1}: State at {error_record.state.addr:#x} failed with: {error_record.error}"
                     )
 
+        self._report_taint_guided_results()
+
         if self.args.get("verbose"):
             if self.project and self.project.tainted_edges:
-                my_logger.debug(
+                my_logger.info(
                     "Tainted call edges (propagation of taint to arguments):"
                 )
                 for caller, callee in sorted(list(self.project.tainted_edges)):
                     print(f"  {caller} -> {callee}")
             else:
-                my_logger.debug("No tainted call edges were recorded.")
+                my_logger.info("No tainted call edges were recorded.")
 
-            my_logger.debug("Functions that processed/received tainted data:")
+            my_logger.info("Functions that processed/received tainted data:")
             if self.project and self.project.tainted_functions:
                 for func_name in sorted(list(self.project.tainted_functions)):
                     print(f"  - {func_name}")
             else:
-                my_logger.debug(
+                my_logger.info(
                     "No functions were identified as processing or receiving tainted data."
                 )
+
+    def _update_state_taint_score(self, state, called_name, is_tainted):
+        """
+        Update the taint score for a state based on function call analysis.
+        This integrates with TaintGuidedExploration for prioritization.
+        """
+        current_score = state.globals.get("taint_score", 0)
+        
+        if is_tainted:
+            # Increase score for tainted interactions
+            if called_name in INPUT_FUNCTION_NAMES:
+                current_score += 8.0  # High boost for input functions
+            else:
+                current_score += 3.0  # Medium boost for tainted function calls
+        else:
+            # Small boost just for function calls (exploration progress)
+            current_score += 0.1
+        
+        # Apply decay to prevent infinite score growth
+        current_score *= 0.95
+        
+        state.globals["taint_score"] = max(current_score, 0.0)
+        
+        my_logger.debug(f"Updated taint score for state {id(state):#x}: {current_score:.2f}")
+
+    def _report_taint_guided_results(self):
+        """
+        Report results specific to taint-guided exploration.
+        """
+        if hasattr(self, 'taint_exploration') and self.taint_exploration:
+            my_logger.info("\n" + "="*60)
+            my_logger.info("TAINT-GUIDED EXPLORATION RESULTS")
+            my_logger.info("="*60)
+            
+            self.taint_exploration.print_metrics()
+            
+            # Additional analysis
+            metrics = self.taint_exploration.get_exploration_metrics()
+            if metrics['taint_exploration_ratio'] > 0.5:
+                my_logger.info("✓ Good taint coverage: Most exploration focused on tainted paths")
+            elif metrics['taint_exploration_ratio'] > 0.2:
+                my_logger.info("~ Moderate taint coverage: Some focus on tainted paths")
+            else:
+                my_logger.info("⚠ Low taint coverage: Consider adjusting taint detection")
 
     def _visualize_graph(self):
         """
