@@ -97,6 +97,7 @@ class TaintAnalyzer:
         self.main_symbol_name = None
         self.simgr = None
         self.cfg = None
+        self.taint_exploration = None
 
         self._configure_logging()
 
@@ -689,37 +690,7 @@ class TaintAnalyzer:
         )
 
         try:
-            # ENHANCED: Add step-by-step debugging
-            step_count = 0
-            max_steps = 100  # Prevent infinite loops during debugging
-            
-            while self.simgr.active and step_count < max_steps:
-                step_count += 1
-                prev_active = len(self.simgr.active)
-                
-                # Step once
-                self.simgr.step()
-                
-                # Debug info
-                if step_count % 10 == 0 or self.args.get("debug"):
-                    my_logger.debug(f"Step {step_count}: {prev_active} -> {len(self.simgr.active)} active states")
-                    my_logger.debug(f"  Stashes: active={len(self.simgr.active)}, "
-                                   f"deadended={len(self.simgr.deadended)}, "
-                                   f"errored={len(self.simgr.errored)}")
-                    
-                    # Show taint scores for active states
-                    if self.args.get("debug") and hasattr(self, 'taint_exploration'):
-                        for i, state in enumerate(self.simgr.active[:3]):  # Show first 3
-                            score = self.taint_exploration.state_scores.get(id(state), 0)
-                            my_logger.debug(f"    State {i}: score={score:.2f}, addr={state.addr:#x}")
-                
-                # Break if no more active states
-                if not self.simgr.active:
-                    my_logger.info(f"No more active states after {step_count} steps")
-                    break
-            
-            if step_count >= max_steps:
-                my_logger.warning(f"Stopped after {max_steps} steps to prevent infinite loop")
+            self.simgr.run()
 
         except angr.errors.AngrTracerError as e:
             my_logger.warning(
@@ -761,7 +732,8 @@ class TaintAnalyzer:
                         f"Error {i + 1}: State at {error_record.state.addr:#x} failed with: {error_record.error}"
                     )
 
-        self._report_taint_guided_results()
+        if self.taint_exploration:
+            self.taint_exploration.print_metrics()
 
         if self.args.get("verbose"):
             if self.project and self.project.tainted_edges:
@@ -805,26 +777,6 @@ class TaintAnalyzer:
         state.globals["taint_score"] = max(current_score, 0.0)
         
         my_logger.debug(f"Updated taint score for state {id(state):#x}: {current_score:.2f}")
-
-    def _report_taint_guided_results(self):
-        """
-        Report results specific to taint-guided exploration.
-        """
-        if hasattr(self, 'taint_exploration') and self.taint_exploration:
-            my_logger.info("\n" + "="*60)
-            my_logger.info("TAINT-GUIDED EXPLORATION RESULTS")
-            my_logger.info("="*60)
-            
-            self.taint_exploration.print_metrics()
-            
-            # Additional analysis
-            metrics = self.taint_exploration.get_exploration_metrics()
-            if metrics['taint_exploration_ratio'] > 0.5:
-                my_logger.info("✓ Good taint coverage: Most exploration focused on tainted paths")
-            elif metrics['taint_exploration_ratio'] > 0.2:
-                my_logger.info("~ Moderate taint coverage: Some focus on tainted paths")
-            else:
-                my_logger.info("⚠ Low taint coverage: Consider adjusting taint detection")
 
     def _visualize_graph(self):
         """

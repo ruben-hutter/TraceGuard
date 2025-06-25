@@ -299,3 +299,10 @@ class TaintGuidedExploration(ExplorationTechnique):
             self.logger.info(f"Untainted States: {metrics['untainted_states_explored']}")
             self.logger.info(f"Taint Ratio: {metrics['taint_exploration_ratio']:.2%}")
             self.logger.info("="*50)
+
+            if metrics['taint_exploration_ratio'] > 0.5:
+                my_logger.info("✓ Good taint coverage: Most exploration focused on tainted paths")
+            elif metrics['taint_exploration_ratio'] > 0.2:
+                my_logger.info("~ Moderate taint coverage: Some focus on tainted paths")
+            else:
+                my_logger.info("⚠ Low taint coverage: Consider adjusting taint detection")
