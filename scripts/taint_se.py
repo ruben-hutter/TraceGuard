@@ -780,10 +780,6 @@ class TaintAnalyzer:
 
         state.globals["taint_score"] = max(current_score, 0.0)
 
-        my_logger.debug(
-            f"Updated taint score for state {id(state):#x}: {current_score:.2f}"
-        )
-
     def _visualize_graph(self):
         """
         Generates and visualizes the call graph using the Schnauzer visualization client.
