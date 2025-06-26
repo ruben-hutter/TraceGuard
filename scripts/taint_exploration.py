@@ -3,6 +3,7 @@ import time
 from collections import defaultdict
 
 from angr.exploration_techniques import ExplorationTechnique
+from constants import INPUT_FUNCTION_NAMES
 
 
 class TaintGuidedExploration(ExplorationTechnique):
@@ -178,7 +179,7 @@ class TaintGuidedExploration(ExplorationTechnique):
         
         # Input source analysis
         input_sources = [f for f in (self.project.tainted_functions or []) 
-                        if f in {"fgets", "gets", "scanf", "read", "recv", "fread"}]
+                        if f in INPUT_FUNCTION_NAMES]
         
         # Critical sink analysis (potential vulnerability points)
         critical_sinks = [f for f in (self.project.tainted_functions or []) 

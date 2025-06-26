@@ -6,6 +6,8 @@ from pathlib import Path
 import angr
 import claripy
 from angr.exploration_techniques import DFS
+from constants import INPUT_FUNCTION_NAMES
+from constants import COMMON_LIBC_FUNCTIONS
 from meta import parse_meta_file
 from taint_exploration import TaintGuidedExploration
 from visualize import generate_and_visualize_graph
@@ -13,50 +15,6 @@ from visualize import generate_and_visualize_graph
 # Logging configuration
 logging.getLogger("angr").setLevel(logging.ERROR)
 my_logger = logging.getLogger(__name__)
-
-
-COMMON_LIBC_FUNCTIONS = {
-    "printf",
-    "scanf",
-    "sprintf",
-    "sscanf",
-    "fprintf",
-    "fscanf",
-    "malloc",
-    "free",
-    "calloc",
-    "realloc",
-    "strcpy",
-    "strncpy",
-    "strcat",
-    "strncat",
-    "strcmp",
-    "strncmp",
-    "strlen",
-    "strchr",
-    "strrchr",
-    "strstr",
-    "strtok",
-    "memcpy",
-    "memmove",
-    "memset",
-    "memcmp",
-    "fopen",
-    "fclose",
-    "fread",
-    "fwrite",
-    "fseek",
-    "ftell",
-    "rewind",
-    "exit",
-    "abort",
-    "puts",
-    "gets",
-    "fgets",
-    "fputs",
-}
-
-INPUT_FUNCTION_NAMES = {"fgets", "gets", "scanf", "read", "recv", "fread"}
 
 
 class AnalysisSetupError(Exception):
