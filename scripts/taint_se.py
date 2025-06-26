@@ -6,8 +6,23 @@ from pathlib import Path
 import angr
 import claripy
 from angr.exploration_techniques import DFS
-from constants import INPUT_FUNCTION_NAMES
-from constants import COMMON_LIBC_FUNCTIONS
+from constants import (
+    INPUT_FUNCTION_NAMES,
+    COMMON_LIBC_FUNCTIONS,
+    DEBUG_LOG_FORMAT,
+    INFO_LOG_FORMAT,
+    DEFAULT_BUFFER_SIZE,
+    MAX_TAINT_SIZE_BYTES,
+    TAINT_SCORE_INPUT_FUNCTION,
+    TAINT_SCORE_TAINTED_CALL,
+    TAINT_SCORE_FUNCTION_CALL,
+    TAINT_SCORE_DECAY_FACTOR,
+    TAINT_SCORE_MINIMUM_TAINTED,
+    AMD64_ARGUMENT_REGISTERS,
+    AMD64_RETURN_REGISTER,
+    X86_ARGUMENT_REGISTERS,
+    X86_RETURN_REGISTER,
+)
 from meta import parse_meta_file
 from taint_exploration import TaintGuidedExploration
 from visualize import generate_and_visualize_graph
@@ -74,7 +89,7 @@ class TaintAnalyzer:
             my_logger.handlers.clear()
 
         console_handler = logging.StreamHandler(sys.stdout)
-        formatter = logging.Formatter("[%(levelname)s] - %(message)s")
+        formatter = logging.Formatter(INFO_LOG_FORMAT)
         console_handler.setFormatter(formatter)
         my_logger.addHandler(console_handler)
 
@@ -83,9 +98,7 @@ class TaintAnalyzer:
         if self.args.get("verbose") or self.args.get("debug"):
             my_logger.setLevel(logging.DEBUG)
         if self.args.get("debug"):
-            debug_formatter = logging.Formatter(
-                "[%(levelname)s] - %(filename)s:%(lineno)d - %(message)s"
-            )
+            debug_formatter = logging.Formatter(DEBUG_LOG_FORMAT)
             console_handler.setFormatter(debug_formatter)
 
         my_logger.propagate = False
@@ -153,22 +166,11 @@ class TaintAnalyzer:
         """
         self.project.arch_info = {}
         if self.project.arch.name == "AMD64":
-            self.project.arch_info["argument_registers"] = [
-                "rdi",
-                "rsi",
-                "rdx",
-                "rcx",
-                "r8",
-                "r9",
-            ]
-            self.project.arch_info["return_register"] = "rax"
+            self.project.arch_info["argument_registers"] = AMD64_ARGUMENT_REGISTERS
+            self.project.arch_info["return_register"] = AMD64_RETURN_REGISTER
         elif self.project.arch.name == "X86":
-            self.project.arch_info["argument_registers"] = [
-                "eax",
-                "ecx",
-                "edx",
-            ]  # Simplified, actual ABI is stack for cdecl
-            self.project.arch_info["return_register"] = "eax"
+            self.project.arch_info["argument_registers"] = X86_ARGUMENT_REGISTERS
+            self.project.arch_info["return_register"] = X86_RETURN_REGISTER
         else:
             my_logger.warning(
                 f"Architecture {self.project.arch.name} argument registers not fully configured for taint analysis."
@@ -341,11 +343,11 @@ class TaintAnalyzer:
                 my_logger.warning(
                     f"Could not concretize size for {called_func_name}, using default 128."
                 )
-                size_val = 128
+                size_val = DEFAULT_BUFFER_SIZE
 
             buf_addr = state.solver.eval_one(buf_ptr_val)
 
-            taint_size_bytes = min(size_val, 256)
+            taint_size_bytes = min(size_val, MAX_TAINT_SIZE_BYTES)
             if taint_size_bytes <= 0:
                 my_logger.warning(
                     f"Invalid or zero size for taint from {called_func_name}: {size_val}"
@@ -724,17 +726,17 @@ class TaintAnalyzer:
         if is_tainted:
             # Increase score for tainted interactions
             if called_name in INPUT_FUNCTION_NAMES:
-                current_score += 8.0  # High boost for input functions
+                current_score += TAINT_SCORE_INPUT_FUNCTION
             else:
-                current_score += 3.0  # Medium boost for tainted function calls
+                current_score += TAINT_SCORE_TAINTED_CALL
         else:
             # Small boost just for function calls (exploration progress)
-            current_score += 0.1
+            current_score += TAINT_SCORE_FUNCTION_CALL
 
         # Apply decay to prevent infinite score growth
-        current_score *= 0.95
+        current_score *= TAINT_SCORE_DECAY_FACTOR
         if is_tainted:
-            current_score = max(current_score, 2.0)  # Keep tainted scores prioritized
+            current_score = max(current_score, TAINT_SCORE_MINIMUM_TAINTED)
 
         state.globals["taint_score"] = max(current_score, 0.0)
 
