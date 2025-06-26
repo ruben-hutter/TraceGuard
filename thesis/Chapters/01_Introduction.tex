@@ -1,40 +1,26 @@
 % !TEX root = ../Thesis.tex
 \chapter{Introduction}
 
-Symbolic execution is a powerful program analysis technique used for vulnerability discovery and test case generation. It explores program execution paths by using symbolic variables instead of concrete inputs. This allows for a more comprehensive analysis compared to traditional testing methods.
+Symbolic execution has emerged as one of the most powerful techniques for automated program analysis, offering significant advantages over traditional testing methods for vulnerability discovery and test case generation. By representing program inputs as symbolic variables rather than concrete values, symbolic execution engines can systematically explore multiple execution paths within a single analysis run, potentially uncovering bugs that would be difficult to find through conventional testing approaches.
 
-\section{Motivation: Addressing the Path Explosion Problem}
+Despite its theoretical promise, symbolic execution faces a fundamental scalability challenge known as the ``path explosion problem.'' As program complexity increases, the number of possible execution paths grows exponentially, quickly overwhelming computational resources and rendering the analysis intractable for real-world software systems. This limitation has been a persistent barrier to the widespread adoption of symbolic execution in practical security analysis workflows.
 
-A key challenge in symbolic execution is the "path explosion problem". As program complexity increases, the number of possible execution paths grows exponentially, making analysis computationally expensive and time-consuming. This limits the scalability of symbolic execution to larger, real-world applications.
+Current symbolic execution engines typically employ uniform exploration strategies, treating all program paths with equal priority regardless of their potential security relevance. This approach wastes significant computational resources on code paths that are unlikely to contain vulnerabilities, while potentially missing critical security-sensitive execution flows. For instance, paths that process user-controlled input or handle memory allocations are statistically more likely to contain exploitable vulnerabilities than paths that perform simple arithmetic operations or access read-only data structures.
 
-\section{Problem Statement}
+This thesis addresses the path explosion problem by proposing a novel approach that integrates taint analysis with symbolic execution to enable intelligent path prioritization. The core insight is that not all execution paths are equally important from a security perspective. By leveraging taint analysis to identify and track data flow from critical sources such as user inputs and memory allocation sites, we can guide the symbolic execution engine to focus its computational resources on paths most likely to exhibit security-relevant behaviors.
 
-This thesis addresses the inefficiency of symbolic execution when applied to large software. Existing approaches often explore all paths indiscriminately, wasting resources on non-critical code sections. A more targeted approach is needed to focus the analysis on potentially vulnerable areas.
+The proposed approach introduces a dynamic scoring mechanism that continuously evaluates the security relevance of execution states based on taint propagation patterns. States that process tainted data receive higher priority scores, while states operating exclusively on untainted data are deprioritized or pruned entirely. This selective exploration strategy aims to maintain the thoroughness of symbolic execution for security-critical code while dramatically reducing the analysis time by avoiding exhaustive exploration of irrelevant program regions.
 
-\section{Goals and Contributions}
+The main contributions of this work are:
 
-This work aims to improve the efficiency of symbolic execution by integrating taint analysis and path prioritization techniques. The main contributions are:
+\textbf{Taint-Guided Path Prioritization:} A novel integration of dynamic taint analysis with symbolic execution that uses taint propagation patterns to intelligently prioritize exploration of security-relevant execution paths.
 
-\begin{itemize}
-    \item \textbf{Improved Efficiency:} Reducing the impact of the path explosion problem by prioritizing relevant paths.
-    \item \textbf{Taint Analysis Integration:} Using taint analysis to track user-controlled inputs and memory allocations, focusing on security-critical data.
-    \item \textbf{Path Prioritization:} Guiding the symbolic execution engine (e.g., Angr) towards paths influenced by tainted data, and ignoring irrelevant paths.
-    \item \textbf{Evaluation of Effectiveness:} Assessing the performance and vulnerability detection capabilities of the optimized approach.
-\end{itemize}
+\textbf{Adaptive Scoring Algorithm:} A scoring mechanism that dynamically adjusts path priorities based on real-time taint analysis results, enabling the symbolic execution engine to focus computational resources on the most promising program regions.
 
-This thesis presents a novel approach to optimizing symbolic execution, providing a more efficient method for security-focused program analysis.
+\textbf{Practical Implementation:} A complete implementation of the proposed approach using the angr symbolic execution framework, demonstrating the feasibility and effectiveness of taint-guided exploration in a production-quality tool.
 
-\section{Structure of the Thesis}
+\textbf{Empirical Evaluation:} Comprehensive evaluation comparing the proposed approach against standard symbolic execution techniques, measuring improvements in analysis efficiency, vulnerability discovery rate, and overall scalability.
 
-The remainder of this thesis is structured as follows:
+The effectiveness of this optimization is evaluated through extensive experimentation on representative programs, examining key metrics including runtime efficiency, path coverage quality, and vulnerability detection capabilities. Results demonstrate that the taint-guided approach can significantly reduce analysis time while maintaining or improving the detection of security-relevant program behaviors, making symbolic execution more practical for analyzing large and complex software systems.
 
-\begin{itemize}
-    \item \textbf{Chapter 2: Background} - Foundational concepts, including symbolic execution, taint analysis, and the Angr framework.
-    \item \textbf{Chapter 3: Conceptual Implementation} - Theoretical framework and prioritization strategies.
-    \item \textbf{Chapter 4: Practical Implementation} - Technical details, tools, and libraries used.
-    \item \textbf{Chapter 5: Evaluation} - Experimental setup and performance results.
-    \item \textbf{Chapter 6: Conclusion} - Key findings and their implications.
-    \item \textbf{Chapter 7: Future Work} - Potential extensions and future research directions.
-    \item \textbf{Chapter 8: Related Work} - Existing research in symbolic execution and related areas.
-     \item \textbf{Chapter 9: Usage of AI} - Documentation of AI-supported technology used in the thesis.
-\end{itemize}
+The remainder of this thesis is organized as follows. Chapter 2 provides essential background on symbolic execution, taint analysis, and the angr framework that forms the foundation for this work. Chapter 3 presents the conceptual framework and theoretical algorithms underlying the taint-guided exploration strategy. Chapter 4 details the practical implementation, including integration with angr and the design of the scoring mechanism. Chapter 5 presents a comprehensive evaluation of the approach, comparing its performance against standard symbolic execution techniques. Chapter 6 discusses related work in symbolic execution optimization and path prioritization. Chapter 7 concludes with a summary of contributions and implications for future research. Chapter 8 explores potential extensions and future research directions, while Chapter 9 documents the use of AI-assisted technologies in the development of this thesis.
