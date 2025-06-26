@@ -1,7 +1,7 @@
 import subprocess
+import sys
 import time
 import webbrowser
-import sys
 from pathlib import Path
 
 # Path to analysis script
@@ -16,13 +16,19 @@ def main():
     and cleaning up afterwards.
     """
     if len(sys.argv) < 2:
-        print("Usage: python scripts/main.py <path_to_binary> [taint_se.py_args...]", file=sys.stderr)
+        print(
+            "Usage: python scripts/main.py <path_to_binary> [taint_se.py_args...]",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     binary_path = Path(sys.argv[1])
 
     if not binary_path.exists():
-        print(f"Error: The specified binary path '{binary_path}' does not exist.", file=sys.stderr)
+        print(
+            f"Error: The specified binary path '{binary_path}' does not exist.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     analysis_args = sys.argv[2:]
@@ -32,7 +38,9 @@ def main():
     try:
         # 1. Start the schnauzer-server in the background
         print("Starting schnauzer-server...")
-        server_process = subprocess.Popen(["schnauzer-server"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        server_process = subprocess.Popen(
+            ["schnauzer-server"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
 
         # 2. Wait for the server to initialize
         print("Waiting for server to start...")

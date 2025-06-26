@@ -2,11 +2,12 @@ import argparse
 import logging
 import sys
 from pathlib import Path
+
 import angr
 import claripy
 from angr.exploration_techniques import DFS
-from taint_exploration import TaintGuidedExploration
 from meta import parse_meta_file
+from taint_exploration import TaintGuidedExploration
 from visualize import generate_and_visualize_graph
 
 # Logging configuration
@@ -60,6 +61,7 @@ INPUT_FUNCTION_NAMES = {"fgets", "gets", "scanf", "read", "recv", "fread"}
 
 class AnalysisSetupError(Exception):
     """Custom exception for errors during TaintAnalyzer setup."""
+
     pass
 
 
@@ -293,14 +295,16 @@ class TaintAnalyzer:
 
             self.simgr.use_technique(angr.exploration_techniques.LengthLimiter(1000))
             if self.cfg:
-                self.simgr.use_technique(angr.exploration_techniques.LoopSeer(cfg=self.cfg))
-            else:
-                my_logger.warning(
-                    "No CFG found for LoopSeer, proceeding without it."
+                self.simgr.use_technique(
+                    angr.exploration_techniques.LoopSeer(cfg=self.cfg)
                 )
+            else:
+                my_logger.warning("No CFG found for LoopSeer, proceeding without it.")
             self.simgr.use_technique(DFS())
 
-            self.taint_exploration = TaintGuidedExploration(logger=my_logger, project=self.project)
+            self.taint_exploration = TaintGuidedExploration(
+                logger=my_logger, project=self.project
+            )
             self.simgr.use_technique(self.taint_exploration)
 
         except Exception as e:
@@ -722,9 +726,7 @@ class TaintAnalyzer:
                 """
                 pass
             if self.simgr.active:
-                my_logger.info(
-                    f"{len(self.simgr.active)} states are still active."
-                )
+                my_logger.info(f"{len(self.simgr.active)} states are still active.")
             if self.simgr.errored:
                 my_logger.info(f"{len(self.simgr.errored)} states encountered errors.")
                 for i, error_record in enumerate(self.simgr.errored):
@@ -760,7 +762,7 @@ class TaintAnalyzer:
         This integrates with TaintGuidedExploration for prioritization.
         """
         current_score = state.globals.get("taint_score", 0)
-        
+
         if is_tainted:
             # Increase score for tainted interactions
             if called_name in INPUT_FUNCTION_NAMES:
@@ -770,13 +772,17 @@ class TaintAnalyzer:
         else:
             # Small boost just for function calls (exploration progress)
             current_score += 0.1
-        
+
         # Apply decay to prevent infinite score growth
         current_score *= 0.95
-        
+        if is_tainted:
+            current_score = max(current_score, 2.0)  # Keep tainted scores prioritized
+
         state.globals["taint_score"] = max(current_score, 0.0)
-        
-        my_logger.debug(f"Updated taint score for state {id(state):#x}: {current_score:.2f}")
+
+        my_logger.debug(
+            f"Updated taint score for state {id(state):#x}: {current_score:.2f}"
+        )
 
     def _visualize_graph(self):
         """
