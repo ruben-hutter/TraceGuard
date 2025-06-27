@@ -1,5 +1,15 @@
 % !TEX root = ../Thesis.tex
 \chapter{Evaluation}
 
-Compare my work to default angr strategy and other tools. (Maybe I will implement a benchmark program to compare the performance of my tool with angr and other tools.)
-
+Compare my work to default angr strategy. Implement a benchmark tool to compare the performance of the taint-guided symbolic execution against the default path exploration strategy in angr. The benchmark should include:
+\begin{itemize}
+    \item A set of test programs with known vulnerabilities.
+    \item Metrics for evaluation:
+    \begin{itemize}
+        \item Execution time
+        \item Number of paths explored
+        \item Vulnerabilities detected
+        \item Path coverage
+    \end{itemize}
+    \item Comparison of results between the taint-guided approach and the default angr strategy.
+\end{itemize}

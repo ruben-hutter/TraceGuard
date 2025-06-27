@@ -1,4 +1,14 @@
 % !TEX root = ../Thesis.tex
 \chapter{Conclusion}
 
-Rückblick auf die Arbeit, was wurde erreicht (evtl. merge with Future Work)
+% TODO: Rückblick auf die Arbeit, was wurde erreicht (evtl. merge with Future Work)
+
+This thesis introduced a novel approach to optimizing symbolic execution through the integration of taint analysis and path prioritization. Our primary goal was to enhance the efficiency and effectiveness of symbolic execution in discovering security vulnerabilities by focusing computational resources on security-relevant program paths.
+
+We developed a custom Angr exploration technique, `TaintGuidedExploration`, which dynamically assesses the "taint score" of symbolic execution states. This score is calculated based on the interaction of program paths with tainted data originating from user inputs and memory allocations. By prioritizing states with higher taint scores, our tool effectively navigates the vast execution space, directing the symbolic execution engine towards areas most likely to harbor vulnerabilities.
+
+The practical implementation leveraged the Angr framework, incorporating custom hooks for input functions and general function calls to track taint propagation accurately. We demonstrated how our system identifies tainted functions, tracks taint flow through call edges, and uses these insights to adaptively adjust path priorities.
+
+While a formal benchmark with hard data across a wide range of complex binaries was beyond the scope of this thesis, preliminary analysis and conceptual validation indicate that this approach can significantly refine the search space. The methodology provides a systematic and automated way to identify and prioritize security-critical paths, moving beyond manual intuition or uniform exploration. The evaluation section outlines how future work could rigorously compare performance metrics like execution time, path coverage quality, and vulnerability discovery rates against default symbolic execution strategies.
+
+In essence, this work presents a foundational step towards making symbolic execution more practical and efficient for real-world software security analysis. By intelligently guiding the exploration process with taint information, our approach offers a promising direction for more effective and scalable vulnerability discovery.
