@@ -1,4 +1,44 @@
 % !TEX root = ../Thesis.tex
 \chapter{Background}
 
-Base for the thesis, definitions, concepts, and related work (similar approaches or works that give a background for the thesis).
+% TODO: Base for the thesis, definitions, concepts, and related work (similar approaches or works that give a background for the thesis).
+
+This chapter establishes the theoretical foundations necessary for understanding the optimization techniques presented in this thesis. We examine symbolic execution, taint analysis, program analysis techniques, and the Angr framework.
+
+\section{Symbolic Execution}
+
+Symbolic execution is a static analysis technique that explores program execution paths by using symbolic variables instead of concrete inputs. The program state consists of symbolic variables, path constraints, and a program counter. When execution encounters a conditional branch, the engine explores both branches by adding appropriate constraints to the path condition.
+
+A fundamental challenge in symbolic execution is the path explosion problem. As program complexity increases, the number of possible execution paths grows exponentially, making exhaustive exploration computationally intractable. This scalability issue particularly affects real-world applications with complex control flow structures and deep function call hierarchies. Research has shown that symbolic execution tools designed to optimize statement coverage often fail to cover potentially vulnerable code due to complex system interactions and scalability issues of constraint solvers \cite{schwartz_all_2010}.
+
+Various techniques address the scalability challenge, including state merging \cite{kuznetsov_efficient_2012}, constraint optimization, and compositional analysis methods. Recent advances include veritesting approaches that combine dynamic and static symbolic execution \cite{avgerinos_enhancing_2014} and compilation-based symbolic execution achieving orders of magnitude performance improvements \cite{poeplau_symbolic_2020}. Path prioritization strategies represent another important direction, with modern approaches including coverage-guided exploration, target-directed search, and machine learning-based path selection \cite{cha_learning_2021}\footnote{https://github.com/ksluckow/awesome-symbolic-execution}.
+
+Traditional symbolic execution typically employs a forward approach, starting from the program's entry point and exploring paths toward potential targets. However, this method may struggle to reach deeply nested functions or specific program locations of interest. Backward symbolic execution, conversely, begins from target locations and works backwards to identify input conditions that can reach those targets. Compositional approaches combine both techniques by analyzing individual functions in isolation and then reasoning about their interactions.
+
+\section{Taint Analysis}
+
+Taint analysis tracks the propagation of data derived from untrusted sources throughout program execution. Data originating from designated sources (such as user input functions like \texttt{fgets}, \texttt{gets}, \texttt{read}, or \texttt{scanf}) is marked as ``tainted.'' The analysis tracks how this tainted data flows through assignments, function calls, and other operations. When tainted data reaches a security-sensitive sink (such as buffer operations or system calls), the analysis flags a potential vulnerability.
+
+The propagation rules define how taint spreads through different operations: assignments involving tainted values result in tainted variables, arithmetic operations with tainted operands typically produce tainted results, and function calls with tainted arguments may result in tainted return values depending on the function's semantics. Dynamic taint analysis performs tracking during program execution, providing precise information about actual data flows while considering specific calling contexts and program states, resulting in reduced false positives compared to static analysis approaches.
+
+The combination of taint analysis and symbolic execution creates a powerful analysis framework. Symbolic execution can explore multiple program paths while taint analysis identifies which paths involve security-relevant data flows. Research has demonstrated effective integration through pipelined approaches that achieve significant performance improvements while maintaining precision \cite{ming_taintpipe_2015}. This integration enables targeted exploration of paths that process untrusted input, significantly improving the efficiency of vulnerability discovery\footnote{https://github.com/badnack/angr\_taint\_engine}.
+
+\section{Program Analysis Techniques}
+
+Static analysis inspects program code without executing it, analyzing structure, data flow, and control flow based solely on the source code or binary representation. This approach offers comprehensive coverage and efficiency, enabling examination of all program paths without requiring specific input values. However, static analysis faces limitations including difficulty with indirect call resolution and potential false positives due to conservative approximations required for soundness.
+
+Dynamic analysis executes the program and collects runtime information, providing precise information about actual program behavior and complete execution context. This approach eliminates many false positives inherent in static analysis and validates that potential issues are actually exploitable under realistic conditions. However, dynamic analysis results depend heavily on input quality and coverage, and achieving exhaustive coverage can require exponential time for complex programs.
+
+Modern tools often combine both approaches. Symbolic execution represents a hybrid technique, combining static analysis of program structure with dynamic-style exploration of execution paths. Hybrid approaches have proven particularly effective, such as combining fuzzing with selective symbolic execution for comprehensive vulnerability discovery \cite{stephens_driller_2016}.
+
+A Call Graph (CG) represents function call relationships within a program, where each node corresponds to a function and each directed edge represents a call relationship. Call graphs serve important purposes including program understanding, entry point identification, reachability analysis, and complexity assessment. Call graphs prove valuable for path prioritization strategies, enabling identification of functions reachable from tainted input sources and assessment of their relative importance in program execution flow\footnote{https://docs.angr.io/en/latest/built-in-analyses/\#call-graph}.
+
+\section{Angr Framework}
+
+Angr is an open-source binary analysis platform providing comprehensive capabilities for static and dynamic program analysis \cite{shoshitaishvili_sok_2016}. The platform supports multiple architectures and provides a Python-based interface for research and education \cite{springer_teaching_2018}. Key components include\footnote{https://docs.angr.io/en/latest/core-concepts/}: the Project object representing the binary under analysis with access to contents, symbols, and analysis capabilities; the Knowledge Base storing information gathered during analysis including function definitions and control flow graphs; the Simulation Manager handling multiple program states during symbolic execution and managing state transitions; and the Solver Engine interfacing with constraint solvers to determine path feasibility and solve for concrete input values.
+
+Angr supports both static (\texttt{CFGFast}) and dynamic (\texttt{CFGEmulated}) CFG construction \cite{angr_cfg_analysis}. Static analysis provides efficiency but may miss indirect calls, while dynamic analysis offers completeness at higher computational cost\footnote{https://docs.angr.io/en/latest/built-in-analyses/}. The static approach analyzes the binary without execution, making it efficient for initial program understanding, while dynamic analysis executes the program with sample inputs to discover reachable code, providing more complete coverage of actual execution paths and better handling of indirect calls.
+
+Angr represents program states with register values, memory contents, path constraints, and execution history. The framework provides APIs for state inspection and manipulation, along with fine-grained execution control through step functions and exploration techniques\footnote{https://docs.angr.io/en/latest/core-concepts/states/}. The step function advances execution by single instructions, enabling precise control over exploration processes, while various exploration strategies guide path selection including depth-first search, breadth-first search, and custom heuristics. Configuration options control execution behavior, such as handling of unconstrained memory and registers, allowing researchers to customize analysis behavior for specific research requirements.
+
+The next chapter will present the conceptual framework for integrating these approaches into TraceGuard's optimized symbolic execution strategy.

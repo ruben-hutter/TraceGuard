@@ -1,8 +1,78 @@
-\begin{thebibliography}{0}
+\begin{thebibliography}{10}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
   \providecommand{\doi}[1]{doi: #1}\else
   \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[ang(2025)]{angr_cfg_analysis}
+angr {CFG} analysis, 2025.
+\newblock URL \url{https://github.com/angr/angr/tree/master/angr/analyses/cfg}.
+
+\bibitem[Avgerinos et~al.(2014)Avgerinos, Rebert, Cha, and
+  Brumley]{avgerinos_enhancing_2014}
+Thanassis Avgerinos, Alexandre Rebert, Sang~Kil Cha, and David Brumley.
+\newblock Enhancing symbolic execution with veritesting.
+\newblock In \emph{Proceedings of the 36th International Conference on Software
+  Engineering}, ICSE 2014, pages 1083--1094. ACM, 2014.
+
+\bibitem[Cha et~al.(2021)Cha, Hong, Lee, and Oh]{cha_learning_2021}
+Sooyoung Cha, Seongjoon Hong, Junhee Lee, and Hakjoo Oh.
+\newblock Learning to explore paths for symbolic execution.
+\newblock In \emph{Proceedings of the 2021 ACM SIGSAC Conference on Computer
+  and Communications Security}, CCS '21, pages 1426--1440. ACM, 2021.
+
+\bibitem[Kuznetsov et~al.(2012)Kuznetsov, Kinder, Bucur, and
+  Candea]{kuznetsov_efficient_2012}
+Vitaly Kuznetsov, Johannes Kinder, Stefan Bucur, and George Candea.
+\newblock Efficient state merging in symbolic execution.
+\newblock In \emph{Proceedings of the 33rd ACM SIGPLAN Conference on
+  Programming Language Design and Implementation}, PLDI '12, pages 193--204.
+  ACM, 2012.
+
+\bibitem[Ming et~al.(2015)Ming, Wu, Wang, Xing, and Liu]{ming_taintpipe_2015}
+Jiang Ming, Dinghao Wu, Jun Wang, Xinyu Xing, and Zhiqiang Liu.
+\newblock {TaintPipe}: Pipelined symbolic taint analysis.
+\newblock In \emph{24th USENIX Security Symposium}, pages 65--80. USENIX
+  Association, 2015.
+
+\bibitem[Poeplau and Francillon(2020)]{poeplau_symbolic_2020}
+Sebastian Poeplau and Aurélien Francillon.
+\newblock Symbolic execution with {SymCC}: Don't interpret, compile!
+\newblock In \emph{29th USENIX Security Symposium}, pages 181--198. USENIX
+  Association, 2020.
+
+\bibitem[Schwartz et~al.(2010)Schwartz, Avgerinos, and
+  Brumley]{schwartz_all_2010}
+Edward~J Schwartz, Thanassis Avgerinos, and David Brumley.
+\newblock All you ever wanted to know about dynamic taint analysis and forward
+  symbolic execution (but might have been afraid to ask).
+\newblock In \emph{2010 IEEE Symposium on Security and Privacy}, pages
+  317--331. IEEE, 2010.
+
+\bibitem[Shoshitaishvili et~al.(2016)Shoshitaishvili, Wang, Salls, Stephens,
+  Polino, Dutcher, Grosen, Feng, Hauser, Kruegel, and
+  Vigna]{shoshitaishvili_sok_2016}
+Yan Shoshitaishvili, Ruoyu Wang, Christopher Salls, Nick Stephens, Mario
+  Polino, Audrey Dutcher, John Grosen, Siji Feng, Christophe Hauser,
+  Christopher Kruegel, and Giovanni Vigna.
+\newblock {SoK}: (state of) the art of war: Offensive techniques in binary
+  analysis.
+\newblock In \emph{IEEE Symposium on Security and Privacy}. IEEE, 2016.
+
+\bibitem[Springer and Feng(2018)]{springer_teaching_2018}
+Jake Springer and Siji Feng.
+\newblock Teaching with angr: A symbolic execution curriculum and {CTF}.
+\newblock In \emph{2018 IEEE/ACM 1st International Workshop on Automated
+  Software Engineering Education}, pages 13--20. IEEE, 2018.
+
+\bibitem[Stephens et~al.(2016)Stephens, Grosen, Salls, Dutcher, Wang, Corbetta,
+  Shoshitaishvili, Kruegel, and Vigna]{stephens_driller_2016}
+Nick Stephens, John Grosen, Christopher Salls, Audrey Dutcher, Ruoyu Wang,
+  Jacopo Corbetta, Yan Shoshitaishvili, Christopher Kruegel, and Giovanni
+  Vigna.
+\newblock Driller: Augmenting fuzzing through selective symbolic execution.
+\newblock In \emph{Network and Distributed System Security Symposium}, NDSS
+  2016. Internet Society, 2016.
 
 \end{thebibliography}

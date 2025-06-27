@@ -5,14 +5,18 @@
 \vspace {2em}
 \contentsline {chapter}{\chapternumberline {1}Introduction}{1}{chapter.4}%
 \contentsline {chapter}{\chapternumberline {2}Background}{4}{chapter.6}%
-\contentsline {chapter}{\chapternumberline {3}Improving Symbolic Execution Through Taint Analysis}{5}{chapter.7}%
-\contentsline {chapter}{\chapternumberline {4}Practical Implementation}{6}{chapter.8}%
-\contentsline {chapter}{\chapternumberline {5}Evaluation}{7}{chapter.9}%
-\contentsline {chapter}{\chapternumberline {6}Related Work}{8}{chapter.10}%
-\contentsline {chapter}{\chapternumberline {7}Conclusion}{9}{chapter.11}%
-\contentsline {chapter}{\chapternumberline {8}Future Work}{10}{chapter.12}%
-\contentsline {chapter}{\chapternumberline {9}Usage of AI}{11}{chapter.13}%
+\contentsline {section}{\numberline {2.1}Symbolic Execution}{4}{section.7}%
+\contentsline {section}{\numberline {2.2}Taint Analysis}{5}{section.9}%
+\contentsline {section}{\numberline {2.3}Program Analysis Techniques}{5}{section.11}%
+\contentsline {section}{\numberline {2.4}Angr Framework}{6}{section.13}%
+\contentsline {chapter}{\chapternumberline {3}Improving Symbolic Execution Through Taint Analysis}{7}{chapter.17}%
+\contentsline {chapter}{\chapternumberline {4}Practical Implementation}{8}{chapter.18}%
+\contentsline {chapter}{\chapternumberline {5}Evaluation}{9}{chapter.19}%
+\contentsline {chapter}{\chapternumberline {6}Related Work}{10}{chapter.20}%
+\contentsline {chapter}{\chapternumberline {7}Conclusion}{11}{chapter.21}%
+\contentsline {chapter}{\chapternumberline {8}Future Work}{12}{chapter.22}%
+\contentsline {chapter}{\chapternumberline {9}Usage of AI}{13}{chapter.23}%
 \vspace {2em}
-\contentsline {chapter}{Bibliography}{12}{appendix*.14}%
-\contentsline {appendix}{\chapternumberline {A}Appendix}{13}{appendix.15}%
+\contentsline {chapter}{Bibliography}{14}{appendix*.24}%
+\contentsline {appendix}{\chapternumberline {A}Appendix}{16}{appendix.25}%
 \vspace {2em}
