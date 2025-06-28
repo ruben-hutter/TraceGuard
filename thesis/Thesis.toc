@@ -4,19 +4,25 @@
 \contentsline {chapter}{Abstract}{iii}{chapter*.2}%
 \vspace {2em}
 \contentsline {chapter}{\chapternumberline {1}Introduction}{1}{chapter.4}%
-\contentsline {chapter}{\chapternumberline {2}Background}{4}{chapter.6}%
-\contentsline {section}{\numberline {2.1}Symbolic Execution}{4}{section.7}%
-\contentsline {section}{\numberline {2.2}Taint Analysis}{5}{section.9}%
-\contentsline {section}{\numberline {2.3}Program Analysis Techniques}{5}{section.11}%
-\contentsline {section}{\numberline {2.4}Angr Framework}{6}{section.13}%
-\contentsline {chapter}{\chapternumberline {3}Improving Symbolic Execution Through Taint Analysis}{7}{chapter.17}%
-\contentsline {chapter}{\chapternumberline {4}Practical Implementation}{8}{chapter.18}%
-\contentsline {chapter}{\chapternumberline {5}Evaluation}{9}{chapter.19}%
-\contentsline {chapter}{\chapternumberline {6}Related Work}{10}{chapter.20}%
-\contentsline {chapter}{\chapternumberline {7}Conclusion}{11}{chapter.21}%
-\contentsline {chapter}{\chapternumberline {8}Future Work}{12}{chapter.22}%
-\contentsline {chapter}{\chapternumberline {9}Usage of AI}{13}{chapter.23}%
+\contentsline {chapter}{\chapternumberline {2}Background}{4}{chapter.7}%
+\contentsline {section}{\numberline {2.1}Symbolic Execution}{4}{section.8}%
+\contentsline {section}{\numberline {2.2}Taint Analysis}{5}{section.10}%
+\contentsline {section}{\numberline {2.3}Program Analysis Techniques}{5}{section.12}%
+\contentsline {section}{\numberline {2.4}Angr Framework}{6}{section.14}%
+\contentsline {chapter}{\chapternumberline {3}Taint-Guided Exploration}{7}{chapter.18}%
+\contentsline {section}{\numberline {3.1}Theoretical Foundation}{7}{section.20}%
+\contentsline {section}{\numberline {3.2}Taint Source Identification}{8}{section.21}%
+\contentsline {section}{\numberline {3.3}Taint Propagation and Tracking}{8}{section.23}%
+\contentsline {section}{\numberline {3.4}Adaptive Path Prioritization Algorithm}{10}{section.26}%
+\contentsline {section}{\numberline {3.5}Exploration Depth Management}{11}{section.28}%
+\contentsline {section}{\numberline {3.6}Symbolic Execution Integration}{12}{section.32}%
+\contentsline {chapter}{\chapternumberline {4}Practical Implementation}{14}{chapter.33}%
+\contentsline {chapter}{\chapternumberline {5}Evaluation}{15}{chapter.34}%
+\contentsline {chapter}{\chapternumberline {6}Related Work}{16}{chapter.35}%
+\contentsline {chapter}{\chapternumberline {7}Conclusion}{17}{chapter.36}%
+\contentsline {chapter}{\chapternumberline {8}Future Work}{18}{chapter.37}%
+\contentsline {chapter}{\chapternumberline {9}Usage of AI}{19}{chapter.38}%
 \vspace {2em}
-\contentsline {chapter}{Bibliography}{14}{appendix*.24}%
-\contentsline {appendix}{\chapternumberline {A}Appendix}{16}{appendix.25}%
+\contentsline {chapter}{Bibliography}{20}{appendix*.39}%
+\contentsline {appendix}{\chapternumberline {A}Appendix}{22}{appendix.40}%
 \vspace {2em}
