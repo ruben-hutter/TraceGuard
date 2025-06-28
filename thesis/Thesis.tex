@@ -6,6 +6,15 @@
 %% Use the option citeauthor to be able to use citet. The default cite will still work.
 \usepackage[citeauthor]{basilea}
 
+% Customizing captions
+\usepackage{caption}
+\captionsetup{
+    labelformat=simple,
+    font=small,
+    labelfont=bf,
+    justification=centering
+}
+
 \usepackage{listings}
 \usepackage{xcolor}
 
@@ -76,10 +85,10 @@
 \thesismain
 \input{./Chapters/01_Introduction.tex}
 \input{./Chapters/02_Background.tex}
-\input{./Chapters/03_Conceptual_Implementation.tex}
-\input{./Chapters/04_Practical_Implementation.tex}
-\input{./Chapters/05_Evaluation.tex}
-\input{./Chapters/06_Related_Work.tex}
+\input{./Chapters/03_Related_Work.tex}
+\input{./Chapters/04_Taint_Guided_Exploration.tex}
+\input{./Chapters/05_Implementation.tex}
+\input{./Chapters/06_Evaluation.tex}
 \input{./Chapters/07_Conclusion.tex}
 \input{./Chapters/08_Future_Work.tex}
 \input{./Chapters/09_Usage_of_AI.tex}
