@@ -1,4 +1,4 @@
-# Optimizing Symbolic Execution Through Taint Analysis and Path Prioritization
+# TraceGuard
 
 ## Overview
 
