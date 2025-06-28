@@ -1,4 +1,4 @@
-\begin{thebibliography}{7}
+\begin{thebibliography}{11}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -11,12 +11,36 @@
 \newblock URL \url{https://docs.angr.io/}.
 \newblock Accessed: 2025-06-28.
 
+\bibitem[Baldoni et~al.(2018)Baldoni, Coppa, D'elia, Demetrescu, and
+  Finocchi]{baldoni_survey_2018}
+Roberto Baldoni, Emilio Coppa, Daniele~Cono D'elia, Camil Demetrescu, and Irene
+  Finocchi.
+\newblock A survey of symbolic execution techniques.
+\newblock \emph{ACM Computing Surveys}, 51\penalty0 (3):\penalty0 50:1--50:39,
+  2018.
+\newblock \doi{10.1145/3182657}.
+
 \bibitem[Cadar et~al.(2008)Cadar, Dunbar, and Engler]{cadar_klee_2008}
 Cristian Cadar, Daniel Dunbar, and Dawson Engler.
 \newblock {KLEE}: Unassisted and automatic generation of high-coverage tests
   for complex systems programs.
 \newblock In \emph{8th USENIX Symposium on Operating Systems Design and
   Implementation}, pages 209--224. USENIX Association, 2008.
+
+\bibitem[Clarke et~al.(2003)Clarke, Kroening, and
+  Yorav]{clarke_behavioral_2003}
+Edmund Clarke, Daniel Kroening, and Karen Yorav.
+\newblock Behavioral consistency of {C} and {Verilog} programs using bounded
+  model checking.
+\newblock In \emph{Proceedings of the 40th Annual Design Automation
+  Conference}, pages 368--371. ACM, 2003.
+
+\bibitem[Godefroid et~al.(2008)Godefroid, Levin, and
+  Molnar]{godefroid_automated_2008}
+Patrice Godefroid, Michael~Y. Levin, and David~A. Molnar.
+\newblock Automated whitebox fuzz testing.
+\newblock In \emph{Network and Distributed System Security Symposium}. Internet
+  Society, 2008.
 
 \bibitem[Ming et~al.(2015)Ming, Wu, Wang, Xing, and Liu]{ming_taintpipe_2015}
 Jiang Ming, Dinghao Wu, Jun Wang, Xinyu Xing, and Zhiqiang Liu.
@@ -56,5 +80,12 @@ Jake Springer and Siji Feng.
 \newblock Teaching with angr: A symbolic execution curriculum and {CTF}.
 \newblock In \emph{2018 IEEE/ACM 1st International Workshop on Automated
   Software Engineering Education}, pages 13--20. IEEE, 2018.
+
+\bibitem[Visser et~al.(2003)Visser, Havelund, Brat, Park, and
+  Lerda]{visser_model_2003}
+Willem Visser, Klaus Havelund, Guillaume Brat, SeungJoon Park, and Flavio
+  Lerda.
+\newblock Model checking programs.
+\newblock In \emph{Automated Software Engineering}, pages 3--12. IEEE, 2003.
 
 \end{thebibliography}
