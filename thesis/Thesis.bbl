@@ -5,20 +5,12 @@
   \providecommand{\doi}[1]{doi: #1}\else
   \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
 
-\bibitem[{Angr Team}(2024)]{angr_documentation}
-{Angr Team}.
-\newblock Angr documentation, 2024.
-\newblock URL \url{https://docs.angr.io/}.
-\newblock Accessed: 2025-06-28.
-
-\bibitem[Baldoni et~al.(2018)Baldoni, Coppa, D'elia, Demetrescu, and
-  Finocchi]{baldoni_survey_2018}
-Roberto Baldoni, Emilio Coppa, Daniele~Cono D'elia, Camil Demetrescu, and Irene
-  Finocchi.
-\newblock A survey of symbolic execution techniques.
-\newblock \emph{ACM Computing Surveys}, 51\penalty0 (3):\penalty0 50:1--50:39,
-  2018.
-\newblock \doi{10.1145/3182657}.
+\bibitem[Avgerinos et~al.(2014)Avgerinos, Rebert, Cha, and
+  Brumley]{avgerinos_enhancing_2014}
+Thanassis Avgerinos, Alexandre Rebert, Sang~Kil Cha, and David Brumley.
+\newblock Enhancing symbolic execution with veritesting.
+\newblock In \emph{Proceedings of the 36th International Conference on Software
+  Engineering}, pages 1083--1094. ACM, 2014.
 
 \bibitem[Cadar et~al.(2008)Cadar, Dunbar, and Engler]{cadar_klee_2008}
 Cristian Cadar, Daniel Dunbar, and Dawson Engler.
@@ -42,18 +34,25 @@ Patrice Godefroid, Michael~Y. Levin, and David~A. Molnar.
 \newblock In \emph{Network and Distributed System Security Symposium}. Internet
   Society, 2008.
 
+\bibitem[Kuznetsov et~al.(2012)Kuznetsov, Kinder, Bucur, and
+  Candea]{kuznetsov_efficient_2012}
+Vitaly Kuznetsov, Johannes Kinder, Stefan Bucur, and George Candea.
+\newblock Efficient state merging in symbolic execution.
+\newblock In \emph{Proceedings of the 33rd ACM SIGPLAN Conference on
+  Programming Language Design and Implementation}, PLDI '12, pages 193--204.
+  ACM, 2012.
+
 \bibitem[Ming et~al.(2015)Ming, Wu, Wang, Xing, and Liu]{ming_taintpipe_2015}
 Jiang Ming, Dinghao Wu, Jun Wang, Xinyu Xing, and Zhiqiang Liu.
 \newblock {TaintPipe}: Pipelined symbolic taint analysis.
 \newblock In \emph{24th USENIX Security Symposium}, pages 65--80. USENIX
   Association, 2015.
 
-\bibitem[Newsome and Song(2005)]{newsome_dynamic_2005}
-James Newsome and Dawn Song.
-\newblock Dynamic taint analysis for automatic detection, analysis, and
-  signature generation of exploits on commodity software.
-\newblock In \emph{Network and Distributed System Security Symposium}. Internet
-  Society, 2005.
+\bibitem[Poeplau and Francillon(2020)]{poeplau_symbolic_2020}
+Sebastian Poeplau and Aurélien Francillon.
+\newblock Symbolic execution with {SymCC}: Don't interpret, compile!
+\newblock In \emph{29th USENIX Security Symposium}, pages 181--198. USENIX
+  Association, 2020.
 
 \bibitem[Schwartz et~al.(2010)Schwartz, Avgerinos, and
   Brumley]{schwartz_all_2010}
