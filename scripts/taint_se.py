@@ -251,7 +251,7 @@ class TaintAnalyzer:
 
         try:
             initial_state = self.project.factory.full_init_state(addr=self.main_addr)
-            self.simgr = self.project.factory.simulation_manager(initial_state)
+            self.simgr = self.project.factory.simulation_manager(initial_state, save_unconstrained=True)
 
             self.simgr.use_technique(angr.exploration_techniques.LengthLimiter(1000))
             if self.cfg:
@@ -692,6 +692,15 @@ class TaintAnalyzer:
                 for i, error_record in enumerate(self.simgr.errored):
                     my_logger.error(
                         f"Error {i + 1}: State at {error_record.state.addr:#x} failed with: {error_record.error}"
+                    )
+            if self.simgr.unconstrained:
+                # TODO: Check if this is good
+                my_logger.info(
+                    f"{len(self.simgr.unconstrained)} states are unconstrained."
+                )
+                for i, unconstrained_state in enumerate(self.simgr.unconstrained):
+                    my_logger.info(
+                        f"Unconstrained State {i + 1}: {unconstrained_state}"
                     )
 
         if self.taint_exploration:
