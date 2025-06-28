@@ -23,18 +23,4 @@ tidy:
 clean:
 	rm -f $(TARGETS_BIN)
 
-BINARY ?=
-ANALYSIS_FLAGS ?=
-
-analyze: all
-	@if [ -z "$(BINARY)" ]; then \
-		echo "Error: No binary specified. Usage: make analyze BINARY=examples/program1 [ANALYSIS_FLAGS=\"--some-flag\"]" >&2; \
-		exit 1; \
-	fi; \
-	if [ ! -f "$(BINARY)" ]; then \
-		echo "Error: Binary '$(BINARY)' not found." >&2; \
-		exit 1; \
-	fi; \
-	uv run $(PYTHON_ANALYZER) "$(BINARY)" $(ANALYSIS_FLAGS)
-
-.PHONY: all format tidy clean analyze
+.PHONY: all format tidy clean
