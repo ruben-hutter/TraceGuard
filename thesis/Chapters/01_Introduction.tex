@@ -20,7 +20,11 @@ Despite the importance of efficient symbolic execution, practitioners lack an au
 
 Addressing this issue could significantly enhance both the efficiency and thoroughness of symbolic execution for security testing.
 
-\textbf{Thesis Overview.} This work presents a novel approach that integrates taint analysis with symbolic execution to enable intelligent path prioritization. Our methodology identifies and tracks data flow from critical sources such as user inputs and memory allocation sites, guiding the symbolic execution engine to focus computational resources on paths most likely to exhibit security-relevant behaviors. The main contributions of this thesis are:
+% Suggestions
+% Add after path explosion discussion:
+\textbf{Taint Analysis Motivation:} Traditional symbolic execution treats all execution paths with equal priority, failing to distinguish between security-critical paths that process user input and auxiliary paths that handle internal program state. This uniform treatment leads to computational waste on paths unlikely to contain vulnerabilities.
+
+\textbf{Thesis Overview.} This work presents TraceGuard\footnote{https://github.com/ruben-hutter/TraceGuard}, a novel approach that integrates taint analysis with symbolic execution to enable intelligent path prioritization. The methodology identifies and tracks data flow from critical sources such as user inputs and memory allocation sites, guiding the symbolic execution engine to focus computational resources on paths most likely to exhibit security-relevant behaviors. The main contributions of this thesis are:
 
 \begin{itemize}
     \item \textbf{Taint-Guided Path Prioritization:} A novel integration of dynamic taint analysis with symbolic execution that uses taint propagation patterns to intelligently prioritize exploration of security-relevant execution paths.
@@ -41,7 +45,7 @@ The thesis is organized as follows:
 \begin{itemize}
     \item \textbf{Chapter 2} reviews essential background concepts including symbolic execution, taint analysis, and the angr framework.
     \item \textbf{Chapter 3} presents the conceptual framework and theoretical algorithms underlying the taint-guided exploration strategy.
-    \item \textbf{Chapter 4} details the practical implementation of our approach, including integration with angr and the design of the scoring mechanism.
+    \item \textbf{Chapter 4} details the practical implementation of the proposed approach, including integration with angr and the design of the scoring mechanism.
     \item \textbf{Chapter 5} presents a comprehensive evaluation of the approach, comparing its performance against standard symbolic execution techniques.
     \item \textbf{Chapter 6} discusses related work in symbolic execution optimization and path prioritization.
     \item \textbf{Chapter 7} concludes with a summary of contributions and implications for future research.

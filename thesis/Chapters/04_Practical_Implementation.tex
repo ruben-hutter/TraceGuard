@@ -1,6 +1,75 @@
 % !TEX root = ../Thesis.tex
-\chapter{Practical Implementation}
+\chapter{Implementation}
 
-This is a short conclusion on the thesis template documentation. If you have any comments or suggestions for improving the template, if you find any bugs or problems, please contact me. 
+% TODO: How does the script work? Implementation details, how to use it, how to run it, how to set up the environment. Strategies that I use, LoopSeer...
 
-How does the script work? Implementation details, how to use it, how to run it, how to set up the environment. Strategies that I use, LoopSeer...
+\section{System Architecture}
+\subsection{TraceGuard Framework Overview}
+% High-level architecture diagram
+% Component interaction and data flow
+% Integration with Angr symbolic execution engine
+
+\subsection{Core Components}
+\begin{itemize}
+    \item \textbf{TaintAnalyzer:} Tracks taint propagation through symbolic states
+    \item \textbf{ScoreCalculator:} Computes dynamic taint scores
+    \item \textbf{ExplorationStrategy:} Implements taint-guided path prioritization
+    \item \textbf{HookManager:} Manages function call interception and monitoring
+\end{itemize}
+
+\section{Angr Integration}
+\subsection{Custom Exploration Technique}
+\begin{lstlisting}[language=Python]
+class TaintGuidedExploration(angr.exploration_techniques.ExplorationTechnique):
+    def __init__(self, taint_sources, max_depth=50):
+        super().__init__()
+        self.taint_sources = taint_sources
+        self.max_depth = max_depth
+        self.taint_tracker = TaintTracker()
+        
+    def step(self, simgr, stash='active', **kwargs):
+        # Implementation details
+\end{lstlisting}
+
+\subsection{State Prioritization Implementation}
+\begin{lstlisting}[language=Python]
+def prioritize_states(self, states):
+    scored_states = []
+    for state in states:
+        score = self.calculate_taint_score(state)
+        scored_states.append((score, state))
+    
+    # Sort by score (descending) and return prioritized list
+    return [state for _, state in sorted(scored_states, reverse=True)]
+\end{lstlisting}
+
+\section{Taint Tracking Implementation}
+\subsection{Taint Propagation Engine}
+% Detailed implementation of Algorithm 2 from Chapter 3
+% Register and memory taint tracking
+% Inter-procedural taint flow
+
+\subsection{Function Hook System}
+% Implementation of input function detection
+% Custom hooks for malloc, fgets, scanf, etc.
+% Taint source identification in practice
+
+\section{Configuration and Extensibility}
+\subsection{Configuration Parameters}
+\begin{lstlisting}[language=Python]
+{
+    "taint_sources": ["fgets", "scanf", "getchar", "read"],
+    "memory_functions": ["malloc", "calloc", "realloc"],
+    "max_depth": 50,
+    "score_weights": {
+        "input_bonus": 2.0,
+        "memory_bonus": 1.5,
+        "depth_penalty": 0.1
+    }
+}
+\end{lstlisting}
+
+\subsection{Plugin Architecture}
+% How to extend TraceGuard with new taint sources
+% Custom scoring functions
+% Integration with other analysis tools

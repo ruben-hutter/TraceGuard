@@ -42,3 +42,15 @@ Angr supports both static (\texttt{CFGFast}) and dynamic (\texttt{CFGEmulated}) 
 Angr represents program states with register values, memory contents, path constraints, and execution history. The framework provides APIs for state inspection and manipulation, along with fine-grained execution control through step functions and exploration techniques\footnote{https://docs.angr.io/en/latest/core-concepts/states/}. The step function advances execution by single instructions, enabling precise control over exploration processes, while various exploration strategies guide path selection including depth-first search, breadth-first search, and custom heuristics. Configuration options control execution behavior, such as handling of unconstrained memory and registers, allowing researchers to customize analysis behavior for specific research requirements.
 
 The next chapter will present the conceptual framework for integrating these approaches into TraceGuard's optimized symbolic execution strategy.
+
+\section{Dynamic Taint Analysis}
+% Add detailed explanation of taint propagation rules
+% Example: x = tainted_input + 5; // x becomes tainted
+
+\section{Taint Sources and Sinks in Security Analysis}
+% Explain common taint sources (user input, network, files)
+% Discuss security-relevant sinks (system calls, memory operations)
+
+\section{Symbolic Execution State Management}
+% Explain how symbolic states are maintained and prioritized
+% Discuss exploration strategies and their trade-offs

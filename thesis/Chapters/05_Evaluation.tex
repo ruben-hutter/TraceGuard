@@ -1,15 +1,61 @@
 % !TEX root = ../Thesis.tex
 \chapter{Evaluation}
 
-Compare my work to default angr strategy. Implement a benchmark tool to compare the performance of the taint-guided symbolic execution against the default path exploration strategy in angr. The benchmark should include:
+%Compare my work to default angr strategy. Implement a benchmark tool to compare the performance of the taint-guided symbolic execution against the default path exploration strategy in angr. The benchmark should include:
+%\begin{itemize}
+%    \item A set of test programs with known vulnerabilities.
+%    \item Metrics for evaluation:
+%    \begin{itemize}
+%        \item Execution time
+%        \item Number of paths explored
+%        \item Vulnerabilities detected
+%        \item Path coverage
+%    \end{itemize}
+%    \item Comparison of results between the taint-guided approach and the default angr strategy.
+%\end{itemize}
+
+\section{Experimental Design}
+\subsection{Research Questions}
+\begin{enumerate}
+    \item How does taint-guided exploration compare to default symbolic execution in terms of vulnerability discovery rate?
+    \item What is the computational overhead of taint tracking and scoring?
+    \item How does the approach scale with program complexity?
+    \item What is the effectiveness of different taint source configurations?
+\end{enumerate}
+
+\subsection{Evaluation Metrics}
 \begin{itemize}
-    \item A set of test programs with known vulnerabilities.
-    \item Metrics for evaluation:
-    \begin{itemize}
-        \item Execution time
-        \item Number of paths explored
-        \item Vulnerabilities detected
-        \item Path coverage
-    \end{itemize}
-    \item Comparison of results between the taint-guided approach and the default angr strategy.
+    \item \textbf{Coverage Metrics:} Basic block coverage, path coverage
+    \item \textbf{Efficiency Metrics:} Time to first vulnerability, total analysis time
+    \item \textbf{Effectiveness Metrics:} Number of vulnerabilities found, false positive rate
+    \item \textbf{Scalability Metrics:} Memory usage, state explosion control
 \end{itemize}
+
+\section{Benchmark Programs}
+\subsection{Synthetic Benchmarks}
+% Simple C programs with known vulnerabilities
+% Buffer overflows, format string bugs, use-after-free
+
+\subsection{Real-World Programs}
+% DARPA CGC binaries
+% CVE-documented vulnerable programs
+% Open-source utilities with known security issues
+
+\section{Experimental Results}
+\subsection{Comparison with Standard Symbolic Execution}
+% Tables and graphs comparing TraceGuard vs. default Angr
+% Statistical significance testing
+
+\subsection{Ablation Studies}
+% Impact of different scoring components
+% Effect of depth limitations
+% Sensitivity to configuration parameters
+
+\section{Case Studies}
+\subsection{Buffer Overflow Discovery}
+% Detailed trace of how TraceGuard finds a specific vulnerability
+% Comparison with manual analysis
+
+\subsection{Format String Vulnerability}
+% Another detailed case study
+% Demonstration of taint flow from input to vulnerable sink

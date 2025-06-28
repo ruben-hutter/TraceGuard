@@ -5,7 +5,7 @@
 
 Having established the need for more efficient symbolic execution in Chapter 1, we now turn to the theoretical foundation of TraceGuard's solution. The key insight driving this approach is that not all execution paths are equally valuable for security analysis—paths that interact with user-controlled data are significantly more likely to harbor vulnerabilities than those processing only internal program state.
 
-TraceGuard\footnote{https://github.com/ruben-hutter/taint-guided-se} operationalizes this insight through a dynamic taint scoring mechanism that quantifies the security relevance of each symbolic execution state. The following sections present the conceptual algorithms and design decisions that enable this taint-guided exploration strategy.
+TraceGuard operationalizes this insight through a dynamic taint scoring mechanism that quantifies the security relevance of each symbolic execution state. The following sections present the conceptual algorithms and design decisions that enable this taint-guided exploration strategy.
 
 \section{Theoretical Foundation}
 
@@ -218,3 +218,45 @@ TraceGuard's taint-guided exploration operates as an enhancement to existing sym
 \textbf{Complementary Optimization Techniques:} The taint-guided strategy operates alongside other symbolic execution optimizations such as depth limiting, loop detection, and search heuristics. This cooperative approach ensures that multiple optimization strategies can work together to improve overall analysis efficiency.
 
 The theoretical integration model demonstrates that security-focused guidance can be added to symbolic execution engines without fundamental architectural changes, making the approach broadly applicable to different symbolic execution frameworks and analysis scenarios.
+
+% Suggestions 3.1
+\section{Theoretical Foundation}
+% Add this content:
+\subsection{Formal Problem Definition}
+Let $P$ be a program with control flow graph $CFG = (V, E)$ where $V$ represents basic blocks and $E$ represents control flow transitions. Let $T \subseteq V$ be the set of taint sources and $S \subseteq V$ be the set of security-relevant program locations (sinks).
+
+\textbf{Definition 1 (Taint-Guided Path):} A path $\pi = v_0, v_1, ..., v_n$ in $CFG$ is taint-guided if $\exists i, j$ such that $v_i \in T$ and there exists a data dependency from $v_i$ to $v_j$ where $j > i$.
+
+\textbf{Definition 2 (Taint Score):} For a symbolic execution state $s$ at program location $v$, the taint score $\tau(s)$ is defined as:
+$$\tau(s) = \alpha \cdot I(s) + \beta \cdot M(s) + \gamma \cdot D(s) + \delta \cdot C(s)$$
+where $I(s)$ is input interaction score, $M(s)$ is memory operation score, $D(s)$ is depth penalty, and $C(s)$ is coverage bonus.
+
+
+% Suggestions 3.4
+\section{Complete Taint Scoring Framework}
+
+\begin{algorithm}
+\caption{Dynamic Taint Score Calculation}
+\begin{algorithmic}[1]
+\Require State $s$, Taint information $\mathcal{T}$, Execution history $H$
+\Ensure Updated taint score $\tau(s)$
+\State $score \gets 0$
+\State $input\_bonus \gets \textsc{CalculateInputInteraction}(s, \mathcal{T})$
+\State $memory\_bonus \gets \textsc{CalculateMemoryOperations}(s, \mathcal{T})$
+\State $call\_bonus \gets \textsc{CalculateFunctionCalls}(s, \mathcal{T})$
+\State $depth\_penalty \gets \textsc{CalculateDepthPenalty}(s)$
+\State $coverage\_bonus \gets \textsc{CalculateCoverageBonus}(s, H)$
+\State $score \gets input\_bonus + memory\_bonus + call\_bonus - depth\_penalty + coverage\_bonus$
+\State $\tau(s) \gets \max(0, score)$ \Comment{Ensure non-negative score}
+\State \Return $\tau(s)$
+\end{algorithmic}
+\end{algorithm}
+
+% Suggestions
+% Add to Chapter 3:
+\section{Complexity Analysis}
+\subsection{Time Complexity}
+The taint-guided exploration has time complexity $O(|S| \cdot \log|S| + |T|)$ per symbolic execution step, where $|S|$ is the number of active states and $|T|$ is the number of taint tracking operations.
+
+\subsection{Space Complexity}
+Taint tracking requires additional memory proportional to the number of symbolic variables, adding $O(|V|)$ space overhead where $|V|$ is the set of tracked symbolic values.
