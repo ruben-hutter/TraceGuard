@@ -1,4 +1,4 @@
-\begin{thebibliography}{11}
+\begin{thebibliography}{8}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -11,21 +11,6 @@ Thanassis Avgerinos, Alexandre Rebert, Sang~Kil Cha, and David Brumley.
 \newblock Enhancing symbolic execution with veritesting.
 \newblock In \emph{Proceedings of the 36th International Conference on Software
   Engineering}, pages 1083--1094. ACM, 2014.
-
-\bibitem[Cadar et~al.(2008)Cadar, Dunbar, and Engler]{cadar_klee_2008}
-Cristian Cadar, Daniel Dunbar, and Dawson Engler.
-\newblock {KLEE}: Unassisted and automatic generation of high-coverage tests
-  for complex systems programs.
-\newblock In \emph{8th USENIX Symposium on Operating Systems Design and
-  Implementation}, pages 209--224. USENIX Association, 2008.
-
-\bibitem[Clarke et~al.(2003)Clarke, Kroening, and
-  Yorav]{clarke_behavioral_2003}
-Edmund Clarke, Daniel Kroening, and Karen Yorav.
-\newblock Behavioral consistency of {C} and {Verilog} programs using bounded
-  model checking.
-\newblock In \emph{Proceedings of the 40th Annual Design Automation
-  Conference}, pages 368--371. ACM, 2003.
 
 \bibitem[Kuznetsov et~al.(2012)Kuznetsov, Kinder, Bucur, and
   Candea]{kuznetsov_efficient_2012}
@@ -80,12 +65,5 @@ Jake Springer and Siji Feng.
 \newblock Teaching with angr: A symbolic execution curriculum and {CTF}.
 \newblock In \emph{2018 IEEE/ACM 1st International Workshop on Automated
   Software Engineering Education}, pages 13--20. IEEE, 2018.
-
-\bibitem[Visser et~al.(2003)Visser, Havelund, Brat, Park, and
-  Lerda]{visser_model_2003}
-Willem Visser, Klaus Havelund, Guillaume Brat, SeungJoon Park, and Flavio
-  Lerda.
-\newblock Model checking programs.
-\newblock In \emph{Automated Software Engineering}, pages 3--12. IEEE, 2003.
 
 \end{thebibliography}

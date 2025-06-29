@@ -1,12 +1,28 @@
 % !TEX root = ../Thesis.tex
 \chapter{Related Work}
 
-This chapter examines specific approaches to improving symbolic execution effectiveness for vulnerability discovery, focusing on methodological innovations that address different aspects of the scalability challenge.
+\section{Optimization Approaches}
 
-\section{Compositional Analysis: MACKE}
+The scalability challenges of symbolic execution have motivated several categories of optimization techniques that focus computational resources more effectively.
 
-MACKE \cite{ognawala_macke_2016} introduces a compositional approach that performs symbolic execution on individual program functions in isolation, then combines results using static analysis and inter-procedural path feasibility checking. The tool employs a three-step process: first analyzing functions separately to achieve higher coverage, then using compositional reasoning to reduce false positives, and finally assigning severity scores to reported vulnerabilities. MACKE demonstrated superior coverage compared to forward symbolic execution on real-world programs including Flex, Grep, and Bzip2, while providing significantly fewer false positives than pure static analysis approaches.
+\subsection{State Space Reduction}
 
-\section{Compilation-Based Execution: SymCC}
+State merging techniques \cite{kuznetsov_efficient_2012} combine multiple execution states sharing similar program locations to reduce the exponential growth of symbolic states. This approach addresses path explosion by merging states that reach the same program point with different path conditions, using sophisticated constraint management to handle the increased complexity of merged constraints.
 
-SymCC \cite{poeplau_symbolic_2020} revolutionized symbolic execution performance through a compilation-based approach that embeds symbolic execution directly into program binaries during compilation. Rather than interpreting intermediate representations at runtime, SymCC inserts symbolic computation code alongside concrete execution, achieving significant performance improvements with 10-12 $\times$ speedup over traditional approaches like KLEE and QSYM. This optimization enabled higher coverage analysis and led to the discovery of vulnerabilities in heavily tested projects such as OpenJPEG.
+Veritesting \cite{avgerinos_enhancing_2014} combines symbolic execution with static symbolic analysis, allowing the engine to efficiently handle straight-line code without forking states at every conditional branch. This technique significantly reduces the number of states that need to be tracked while maintaining analysis precision.
+
+\subsection{Performance Optimization}
+
+Compilation-based symbolic execution \cite{poeplau_symbolic_2020} represents a paradigm shift that embeds symbolic execution logic directly into program binaries during compilation rather than interpreting intermediate representations at runtime. This approach eliminates interpretation overhead while maintaining the precision of symbolic analysis, achieving substantial performance improvements over traditional symbolic execution engines.
+
+\subsection{Compositional Analysis}
+
+MACKE \cite{ognawala_macke_2016} demonstrates a compositional approach that performs symbolic execution on individual program functions in isolation, then combines results using static analysis and inter-procedural path feasibility checking. This method achieves higher coverage than forward symbolic execution while reducing false positives compared to pure static analysis.
+
+\section{Integration Approaches}
+
+Beyond performance optimizations, research has explored integrated approaches that combine symbolic execution with other analysis techniques. TaintPipe \cite{ming_taintpipe_2015} demonstrates effective integration of taint analysis with symbolic execution through pipelined approaches that achieve significant performance improvements while maintaining precision. This integration enables targeted exploration of paths that process untrusted input, significantly improving the efficiency of vulnerability discovery.
+
+\section{Targeting Security-Relevant Behaviors}
+
+These optimization techniques form the foundation for more targeted analysis approaches that focus computational resources on security-relevant program behaviors. While existing optimizations primarily address performance and scalability, there remains a need for approaches that specifically prioritize paths likely to contain vulnerabilities, particularly those involving user-controlled data flows and external input processing.
