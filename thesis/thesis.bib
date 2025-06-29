@@ -1,52 +1,55 @@
-% FOUNDATIONAL SYMBOLIC EXECUTION PAPERS
+% ==============================================================================
+% THESIS BIBLIOGRAPHY
+% ==============================================================================
 
-% Classic overview paper - very well cited
-@inproceedings{schwartz_all_2010,
-	title = {All You Ever Wanted to Know About Dynamic Taint Analysis and Forward Symbolic Execution (But Might Have Been Afraid to Ask)},
-	booktitle = {2010 IEEE Symposium on Security and Privacy},
-	publisher = {IEEE},
+% FOUNDATIONAL SYMBOLIC EXECUTION
+
+% Classic symbolic execution survey and reference
+@article{schwartz_all_2010,
+	title = {All You Ever Wanted to Know about Dynamic Taint Analysis and Forward Symbolic Execution (but Might Have Been Afraid to Ask)},
 	author = {Schwartz, Edward J. and Avgerinos, Thanassis and Brumley, David},
+	journal = {Proceedings of the 2010 IEEE Symposium on Security and Privacy},
 	year = {2010},
 	pages = {317--331},
-	doi = {10.1109/SP.2010.26}
+	publisher = {IEEE Computer Society}
 }
 
-% SYMBOLIC EXECUTION FRAMEWORKS
+% STATE SPACE REDUCTION
 
-% KLEE - most prominent tool (used in Chapter 3)
-@inproceedings{cadar_klee_2008,
-	title = {{KLEE}: Unassisted and Automatic Generation of High-Coverage Tests for Complex Systems Programs},
-	booktitle = {8th USENIX Symposium on Operating Systems Design and Implementation},
-	publisher = {USENIX Association},
-	author = {Cadar, Cristian and Dunbar, Daniel and Engler, Dawson},
-	year = {2008},
-	pages = {209--224}
-}
-
-% OPTIMIZATION TECHNIQUES
-
-% State merging optimization
+% Efficient state merging techniques
 @inproceedings{kuznetsov_efficient_2012,
 	title = {Efficient State Merging in Symbolic Execution},
+	author = {Kuznetsov, Volodymyr and Kinder, Johannes and Bucur, Stefan and Candea, George},
 	booktitle = {Proceedings of the 33rd ACM SIGPLAN Conference on Programming Language Design and Implementation},
-	publisher = {ACM},
-	author = {Kuznetsov, Vitaly and Kinder, Johannes and Bucur, Stefan and Candea, George},
 	year = {2012},
 	pages = {193--204},
+	publisher = {ACM},
 	series = {PLDI '12}
 }
 
-% Veritesting approach
+% AEG - Automatic Exploit Generation
 @inproceedings{avgerinos_enhancing_2014,
 	title = {Enhancing Symbolic Execution with Veritesting},
-	booktitle = {Proceedings of the 36th International Conference on Software Engineering},
-	publisher = {ACM},
 	author = {Avgerinos, Thanassis and Rebert, Alexandre and Cha, Sang Kil and Brumley, David},
+	booktitle = {Proceedings of the 36th International Conference on Software Engineering},
 	year = {2014},
-	pages = {1083--1094}
+	pages = {1083--1094},
+	publisher = {ACM},
+	series = {ICSE 2014}
 }
 
-% Compilation-based symbolic execution
+% EMPC - Recent path cover approach (2025)
+@article{yao_empc_2025,
+	title = {Empc: Effective Path Prioritization for Symbolic Execution with Path Cover},
+	author = {Yao, Shuangjie and Chen, Junjie},
+	journal = {arXiv preprint arXiv:2505.03555},
+	year = {2025},
+	note = {Available at: \url{https://arxiv.org/abs/2505.03555}}
+}
+
+% PERFORMANCE OPTIMIZATION
+
+% Constraint solving optimizations
 @inproceedings{poeplau_symbolic_2020,
 	title = {Symbolic Execution with {SymCC}: Don't Interpret, Compile!},
 	booktitle = {29th USENIX Security Symposium},
@@ -101,6 +104,77 @@
 	author = {Springer, Jake and Feng, Siji},
 	year = {2018},
 	pages = {13--20}
+}
+
+% HYBRID FUZZING AND CONCOLIC EXECUTION
+
+% SAGE - whitebox fuzzing with symbolic execution
+@inproceedings{godefroid_sage_2008,
+	title = {Automated Whitebox Fuzz Testing},
+	author = {Godefroid, Patrice and Levin, Michael Y. and Molnar, David},
+	booktitle = {Proceedings of the Network and Distributed System Security Symposium},
+	year = {2008},
+	publisher = {Internet Society}
+}
+
+% Driller - selective symbolic execution for fuzzing
+@inproceedings{stephens_driller_2016,
+	title = {Driller: Augmenting Fuzzing Through Selective Symbolic Execution},
+	author = {Stephens, Nick and Grosen, John and Salls, Christopher and Dutcher, Audrey and Wang, Ruoyu and Corbetta, Jacopo and Shoshitaishvili, Yan and Kruegel, Christopher and Vigna, Giovanni},
+	booktitle = {Proceedings of the Network and Distributed System Security Symposium},
+	year = {2016},
+	publisher = {Internet Society}
+}
+
+% STATIC TAINT ANALYSIS
+
+% Enhanced static taint analysis for input validation
+@article{alkhalil_enhanced_2023,
+	title = {An Enhanced Static Taint Analysis Approach to Detect Input Validation Vulnerability},
+	author = {Alkhalil, Ahmad and Kayed, Ahmed and Alotaibi, Fahad and Alserhani, Fawaz},
+	journal = {Journal of King Saud University - Computer and Information Sciences},
+	volume = {35},
+	number = {2},
+	pages = {776--790},
+	year = {2023},
+	publisher = {Elsevier}
+}
+
+% KLEE SYMBOLIC EXECUTION ENGINE
+
+% Original KLEE paper
+@inproceedings{cadar_klee_2008,
+	title = {{KLEE}: Unassisted and Automatic Generation of High-Coverage Tests for Complex Systems Programs},
+	author = {Cadar, Cristian and Dunbar, Daniel and Engler, Dawson R.},
+	booktitle = {Proceedings of the 8th USENIX Conference on Operating Systems Design and Implementation},
+	year = {2008},
+	pages = {209--224},
+	publisher = {USENIX Association},
+	series = {OSDI '08}
+}
+
+% CONCOLIC EXECUTION FUNDAMENTALS
+
+% DART - directed automated random testing
+@inproceedings{godefroid_dart_2005,
+	title = {{DART}: Directed Automated Random Testing},
+	author = {Godefroid, Patrice and Klarlund, Nils and Sen, Koushik},
+	booktitle = {Proceedings of the 2005 ACM SIGPLAN Conference on Programming Language Design and Implementation},
+	year = {2005},
+	pages = {213--223},
+	publisher = {ACM},
+	series = {PLDI '05}
+}
+
+% CUTE - concolic unit testing
+@inproceedings{sen_cute_2005,
+	title = {{CUTE}: A Concolic Unit Testing Engine for {C}},
+	author = {Sen, Koushik and Marinov, Darko and Agha, Gul},
+	booktitle = {Proceedings of the 10th European Software Engineering Conference},
+	year = {2005},
+	pages = {263--272},
+	publisher = {ACM},
+	series = {ESEC/FSE-13}
 }
 
 % ONLINE RESOURCES (keep minimal)

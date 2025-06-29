@@ -13,53 +13,52 @@
 \contentsline {chapter}{\chapternumberline {3}Related Work}{7}{chapter.16}%
 \contentsline {section}{\numberline {3.1}Optimization Approaches}{7}{section.17}%
 \contentsline {subsection}{\numberline {3.1.1}State Space Reduction}{7}{subsection.18}%
-\contentsline {subsection}{\numberline {3.1.2}Performance Optimization}{7}{subsection.19}%
-\contentsline {subsection}{\numberline {3.1.3}Compositional Analysis}{7}{subsection.20}%
-\contentsline {section}{\numberline {3.2}Integration Approaches}{8}{section.21}%
-\contentsline {section}{\numberline {3.3}Targeting Security-Relevant Behaviors}{8}{section.22}%
-\contentsline {chapter}{\chapternumberline {4}Taint-Guided Exploration}{9}{chapter.23}%
-\contentsline {section}{\numberline {4.1}Theoretical Foundation}{9}{section.24}%
-\contentsline {section}{\numberline {4.2}Taint Source Identification}{10}{section.25}%
-\contentsline {section}{\numberline {4.3}Taint Propagation and Tracking}{10}{section.27}%
-\contentsline {section}{\numberline {4.4}Adaptive Path Prioritization Algorithm}{12}{section.30}%
-\contentsline {section}{\numberline {4.5}Exploration Depth Management}{13}{section.32}%
-\contentsline {section}{\numberline {4.6}Symbolic Execution Integration}{14}{section.36}%
-\contentsline {section}{\numberline {4.7}Theoretical Foundation}{15}{section.37}%
-\contentsline {subsection}{\numberline {4.7.1}Formal Problem Definition}{15}{subsection.38}%
-\contentsline {section}{\numberline {4.8}Complete Taint Scoring Framework}{15}{section.39}%
-\contentsline {section}{\numberline {4.9}Complexity Analysis}{15}{section.41}%
-\contentsline {subsection}{\numberline {4.9.1}Time Complexity}{15}{subsection.42}%
-\contentsline {subsection}{\numberline {4.9.2}Space Complexity}{15}{subsection.43}%
-\contentsline {chapter}{\chapternumberline {5}Implementation}{16}{chapter.44}%
-\contentsline {section}{\numberline {5.1}System Architecture}{16}{section.45}%
-\contentsline {subsection}{\numberline {5.1.1}TraceGuard Framework Overview}{16}{subsection.46}%
-\contentsline {subsection}{\numberline {5.1.2}Core Components}{16}{subsection.47}%
-\contentsline {section}{\numberline {5.2}Angr Integration}{16}{section.48}%
-\contentsline {subsection}{\numberline {5.2.1}Custom Exploration Technique}{16}{subsection.49}%
-\contentsline {subsection}{\numberline {5.2.2}State Prioritization Implementation}{16}{subsection.60}%
-\contentsline {section}{\numberline {5.3}Taint Tracking Implementation}{17}{section.70}%
-\contentsline {subsection}{\numberline {5.3.1}Taint Propagation Engine}{17}{subsection.71}%
-\contentsline {subsection}{\numberline {5.3.2}Function Hook System}{17}{subsection.72}%
-\contentsline {section}{\numberline {5.4}Configuration and Extensibility}{17}{section.73}%
-\contentsline {subsection}{\numberline {5.4.1}Configuration Parameters}{17}{subsection.74}%
-\contentsline {subsection}{\numberline {5.4.2}Plugin Architecture}{17}{subsection.86}%
-\contentsline {chapter}{\chapternumberline {6}Evaluation}{18}{chapter.87}%
-\contentsline {section}{\numberline {6.1}Experimental Design}{18}{section.88}%
-\contentsline {subsection}{\numberline {6.1.1}Research Questions}{18}{subsection.89}%
-\contentsline {subsection}{\numberline {6.1.2}Evaluation Metrics}{18}{subsection.94}%
-\contentsline {section}{\numberline {6.2}Benchmark Programs}{18}{section.95}%
-\contentsline {subsection}{\numberline {6.2.1}Synthetic Benchmarks}{18}{subsection.96}%
-\contentsline {subsection}{\numberline {6.2.2}Real-World Programs}{18}{subsection.97}%
-\contentsline {section}{\numberline {6.3}Experimental Results}{18}{section.98}%
-\contentsline {subsection}{\numberline {6.3.1}Comparison with Standard Symbolic Execution}{18}{subsection.99}%
-\contentsline {subsection}{\numberline {6.3.2}Ablation Studies}{18}{subsection.100}%
-\contentsline {section}{\numberline {6.4}Case Studies}{18}{section.101}%
-\contentsline {subsection}{\numberline {6.4.1}Buffer Overflow Discovery}{18}{subsection.102}%
-\contentsline {subsection}{\numberline {6.4.2}Format String Vulnerability}{18}{subsection.103}%
-\contentsline {chapter}{\chapternumberline {7}Conclusion}{19}{chapter.104}%
-\contentsline {chapter}{\chapternumberline {8}Future Work}{20}{chapter.105}%
-\contentsline {chapter}{\chapternumberline {9}Usage of AI}{21}{chapter.106}%
+\contentsline {subsection}{\numberline {3.1.2}Performance and Compositional Analysis}{7}{subsection.19}%
+\contentsline {section}{\numberline {3.2}Integration Approaches}{8}{section.20}%
+\contentsline {section}{\numberline {3.3}Security-Focused Targeting and Research Gap}{8}{section.21}%
+\contentsline {chapter}{\chapternumberline {4}Taint-Guided Exploration}{9}{chapter.22}%
+\contentsline {section}{\numberline {4.1}Theoretical Foundation}{9}{section.23}%
+\contentsline {section}{\numberline {4.2}Taint Source Identification}{10}{section.24}%
+\contentsline {section}{\numberline {4.3}Taint Propagation and Tracking}{10}{section.26}%
+\contentsline {section}{\numberline {4.4}Adaptive Path Prioritization Algorithm}{12}{section.29}%
+\contentsline {section}{\numberline {4.5}Exploration Depth Management}{13}{section.31}%
+\contentsline {section}{\numberline {4.6}Symbolic Execution Integration}{14}{section.35}%
+\contentsline {section}{\numberline {4.7}Theoretical Foundation}{15}{section.36}%
+\contentsline {subsection}{\numberline {4.7.1}Formal Problem Definition}{15}{subsection.37}%
+\contentsline {section}{\numberline {4.8}Complete Taint Scoring Framework}{15}{section.38}%
+\contentsline {section}{\numberline {4.9}Complexity Analysis}{15}{section.40}%
+\contentsline {subsection}{\numberline {4.9.1}Time Complexity}{15}{subsection.41}%
+\contentsline {subsection}{\numberline {4.9.2}Space Complexity}{15}{subsection.42}%
+\contentsline {chapter}{\chapternumberline {5}Implementation}{16}{chapter.43}%
+\contentsline {section}{\numberline {5.1}System Architecture}{16}{section.44}%
+\contentsline {subsection}{\numberline {5.1.1}TraceGuard Framework Overview}{16}{subsection.45}%
+\contentsline {subsection}{\numberline {5.1.2}Core Components}{16}{subsection.46}%
+\contentsline {section}{\numberline {5.2}Angr Integration}{16}{section.47}%
+\contentsline {subsection}{\numberline {5.2.1}Custom Exploration Technique}{16}{subsection.48}%
+\contentsline {subsection}{\numberline {5.2.2}State Prioritization Implementation}{16}{subsection.59}%
+\contentsline {section}{\numberline {5.3}Taint Tracking Implementation}{17}{section.69}%
+\contentsline {subsection}{\numberline {5.3.1}Taint Propagation Engine}{17}{subsection.70}%
+\contentsline {subsection}{\numberline {5.3.2}Function Hook System}{17}{subsection.71}%
+\contentsline {section}{\numberline {5.4}Configuration and Extensibility}{17}{section.72}%
+\contentsline {subsection}{\numberline {5.4.1}Configuration Parameters}{17}{subsection.73}%
+\contentsline {subsection}{\numberline {5.4.2}Plugin Architecture}{17}{subsection.85}%
+\contentsline {chapter}{\chapternumberline {6}Evaluation}{18}{chapter.86}%
+\contentsline {section}{\numberline {6.1}Experimental Design}{18}{section.87}%
+\contentsline {subsection}{\numberline {6.1.1}Research Questions}{18}{subsection.88}%
+\contentsline {subsection}{\numberline {6.1.2}Evaluation Metrics}{18}{subsection.93}%
+\contentsline {section}{\numberline {6.2}Benchmark Programs}{18}{section.94}%
+\contentsline {subsection}{\numberline {6.2.1}Synthetic Benchmarks}{18}{subsection.95}%
+\contentsline {subsection}{\numberline {6.2.2}Real-World Programs}{18}{subsection.96}%
+\contentsline {section}{\numberline {6.3}Experimental Results}{18}{section.97}%
+\contentsline {subsection}{\numberline {6.3.1}Comparison with Standard Symbolic Execution}{18}{subsection.98}%
+\contentsline {subsection}{\numberline {6.3.2}Ablation Studies}{18}{subsection.99}%
+\contentsline {section}{\numberline {6.4}Case Studies}{18}{section.100}%
+\contentsline {subsection}{\numberline {6.4.1}Buffer Overflow Discovery}{18}{subsection.101}%
+\contentsline {subsection}{\numberline {6.4.2}Format String Vulnerability}{18}{subsection.102}%
+\contentsline {chapter}{\chapternumberline {7}Conclusion}{19}{chapter.103}%
+\contentsline {chapter}{\chapternumberline {8}Future Work}{20}{chapter.104}%
+\contentsline {chapter}{\chapternumberline {9}Usage of AI}{21}{chapter.105}%
 \vspace {2em}
-\contentsline {chapter}{Bibliography}{22}{appendix*.107}%
-\contentsline {appendix}{\chapternumberline {A}Appendix}{23}{appendix.108}%
+\contentsline {chapter}{Bibliography}{22}{appendix*.106}%
+\contentsline {appendix}{\chapternumberline {A}Appendix}{23}{appendix.107}%
 \vspace {2em}

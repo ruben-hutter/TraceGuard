@@ -1,28 +1,36 @@
 % !TEX root = ../Thesis.tex
 \chapter{Related Work}
 
-\section{Optimization Approaches}
+This chapter surveys existing research in symbolic execution optimization and taint analysis techniques, positioning TraceGuard within the broader landscape of security-focused program analysis. We examine three primary categories of approaches: optimization strategies for managing path explosion, integration techniques combining multiple analysis methods, and security-oriented targeting approaches.
 
-The scalability challenges of symbolic execution have motivated several categories of optimization techniques that focus computational resources more effectively.
+\section{Optimization Approaches}
 
 \subsection{State Space Reduction}
 
-State merging techniques \cite{kuznetsov_efficient_2012} combine multiple execution states sharing similar program locations to reduce the exponential growth of symbolic states. This approach addresses path explosion by merging states that reach the same program point with different path conditions, using sophisticated constraint management to handle the increased complexity of merged constraints.
+The fundamental challenge in symbolic execution remains the path explosion problem, where the number of execution paths grows exponentially with program complexity. \citet{kuznetsov_efficient_2012} introduced efficient state merging techniques to reduce symbolic execution states by combining states with similar path conditions. While effective for certain program structures, this approach lacks security-focused guidance, treating all execution paths equally regardless of their interaction with potentially malicious inputs.
 
-Veritesting \cite{avgerinos_enhancing_2014} combines symbolic execution with static symbolic analysis, allowing the engine to efficiently handle straight-line code without forking states at every conditional branch. This technique significantly reduces the number of states that need to be tracked while maintaining analysis precision.
+\citet{avgerinos_enhancing_2014} proposed AEG (Automatic Exploit Generation), which prioritizes paths leading to exploitable conditions. However, AEG relies primarily on static analysis to identify potentially vulnerable locations, missing dynamic taint flow patterns that emerge only during execution.
 
-\subsection{Performance Optimization}
+Recent work by \citet{yao_empc_2025} introduces Empc, a path cover-based approach that leverages minimum path covers (MPCs) to reduce the exponential number of paths while maintaining code coverage. However, Empc focuses on maximizing code coverage efficiently, while TraceGuard specifically targets security-relevant execution paths through taint propagation analysis.
 
-Compilation-based symbolic execution \cite{poeplau_symbolic_2020} represents a paradigm shift that embeds symbolic execution logic directly into program binaries during compilation rather than interpreting intermediate representations at runtime. This approach eliminates interpretation overhead while maintaining the precision of symbolic analysis, achieving substantial performance improvements over traditional symbolic execution engines.
+\subsection{Performance and Compositional Analysis}
 
-\subsection{Compositional Analysis}
+\citet{poeplau_symbolic_2020} developed optimizations for constraint solving by caching frequently encountered constraints. While these optimizations improve execution speed, they do not address the fundamental issue of exploring irrelevant paths that have no security implications.
 
-MACKE \cite{ognawala_macke_2016} demonstrates a compositional approach that performs symbolic execution on individual program functions in isolation, then combines results using static analysis and inter-procedural path feasibility checking. This method achieves higher coverage than forward symbolic execution while reducing false positives compared to pure static analysis.
+\citet{ognawala_macke_2016} introduced MACKE, a compositional approach that analyzes functions in isolation before combining results. This technique encounters difficulties when taint flows cross function boundaries, as compositional analysis may miss inter-procedural data dependencies crucial for security analysis.
 
 \section{Integration Approaches}
 
-Beyond performance optimizations, research has explored integrated approaches that combine symbolic execution with other analysis techniques. TaintPipe \cite{ming_taintpipe_2015} demonstrates effective integration of taint analysis with symbolic execution through pipelined approaches that achieve significant performance improvements while maintaining precision. This integration enables targeted exploration of paths that process untrusted input, significantly improving the efficiency of vulnerability discovery.
+Dynamic taint analysis and symbolic execution represent complementary approaches that, when combined effectively, can overcome individual limitations. \citet{schwartz_all_2010} provide a comprehensive comparison of dynamic taint analysis and forward symbolic execution, noting that taint analysis excels at tracking data flow patterns but lacks the path exploration capabilities of symbolic execution. Their work identifies the potential for hybrid approaches but does not present a concrete integration strategy.
 
-\section{Targeting Security-Relevant Behaviors}
+\citet{ming_taintpipe_2015} developed TaintPipe, a pipelined approach to symbolic taint analysis that performs lightweight runtime logging followed by offline symbolic taint propagation. While TaintPipe demonstrates the feasibility of combining taint tracking with symbolic reasoning, it operates in a post-processing mode rather than providing real-time guidance to symbolic execution engines.
 
-These optimization techniques form the foundation for more targeted analysis approaches that focus computational resources on security-relevant program behaviors. While existing optimizations primarily address performance and scalability, there remains a need for approaches that specifically prioritize paths likely to contain vulnerabilities, particularly those involving user-controlled data flows and external input processing.
+Recent hybrid fuzzing approaches combine fuzzing with selective symbolic execution but lack sophisticated taint-awareness in their path prioritization strategies. These tools typically trigger symbolic execution when fuzzing coverage stagnates, rather than using taint information to proactively guide exploration toward security-relevant program regions.
+
+\section{Security-Focused Targeting and Research Gap}
+
+Security-focused symbolic execution approaches attempt to prioritize execution paths that are more likely to contain vulnerabilities. Static vulnerability detection approaches rely on pattern matching and dataflow analysis to identify potentially dangerous code locations, but cannot capture the dynamic taint propagation patterns that characterize real security vulnerabilities. Binary analysis frameworks like Angr \cite{shoshitaishvili_sok_2016} provide powerful symbolic execution capabilities but lack built-in security-focused exploration strategies.
+
+The literature survey reveals critical limitations that TraceGuard addresses: (1) \textbf{Lack of Dynamic Taint-Guided Prioritization} - existing approaches focus on general path reduction rather than security-specific targeting; (2) \textbf{Reactive Integration Strategies} - current techniques use taint analysis in post-processing roles rather than as primary exploration drivers; (3) \textbf{Limited Security-Awareness} - optimizations treat all paths equally, failing to recognize higher vulnerability potential of taint-processing paths.
+
+TraceGuard addresses these limitations through a novel real-time integration of dynamic taint analysis with symbolic execution, representing the first comprehensive framework for leveraging runtime taint information to intelligently prioritize security-relevant execution paths.

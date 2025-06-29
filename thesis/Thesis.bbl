@@ -1,4 +1,4 @@
-\begin{thebibliography}{8}
+\begin{thebibliography}{9}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -10,11 +10,11 @@
 Thanassis Avgerinos, Alexandre Rebert, Sang~Kil Cha, and David Brumley.
 \newblock Enhancing symbolic execution with veritesting.
 \newblock In \emph{Proceedings of the 36th International Conference on Software
-  Engineering}, pages 1083--1094. ACM, 2014.
+  Engineering}, ICSE 2014, pages 1083--1094. ACM, 2014.
 
 \bibitem[Kuznetsov et~al.(2012)Kuznetsov, Kinder, Bucur, and
   Candea]{kuznetsov_efficient_2012}
-Vitaly Kuznetsov, Johannes Kinder, Stefan Bucur, and George Candea.
+Volodymyr Kuznetsov, Johannes Kinder, Stefan Bucur, and George Candea.
 \newblock Efficient state merging in symbolic execution.
 \newblock In \emph{Proceedings of the 33rd ACM SIGPLAN Conference on
   Programming Language Design and Implementation}, PLDI '12, pages 193--204.
@@ -45,9 +45,8 @@ Sebastian Poeplau and Aurélien Francillon.
 Edward~J. Schwartz, Thanassis Avgerinos, and David Brumley.
 \newblock All you ever wanted to know about dynamic taint analysis and forward
   symbolic execution (but might have been afraid to ask).
-\newblock In \emph{2010 IEEE Symposium on Security and Privacy}, pages
-  317--331. IEEE, 2010.
-\newblock \doi{10.1109/SP.2010.26}.
+\newblock \emph{Proceedings of the 2010 IEEE Symposium on Security and
+  Privacy}, pages 317--331, 2010.
 
 \bibitem[Shoshitaishvili et~al.(2016)Shoshitaishvili, Wang, Salls, Stephens,
   Polino, Dutcher, Grosen, Feng, Hauser, Kruegel, and
@@ -65,5 +64,12 @@ Jake Springer and Siji Feng.
 \newblock Teaching with angr: A symbolic execution curriculum and {CTF}.
 \newblock In \emph{2018 IEEE/ACM 1st International Workshop on Automated
   Software Engineering Education}, pages 13--20. IEEE, 2018.
+
+\bibitem[Yao and Chen(2025)]{yao_empc_2025}
+Shuangjie Yao and Junjie Chen.
+\newblock Empc: Effective path prioritization for symbolic execution with path
+  cover.
+\newblock \emph{arXiv preprint arXiv:2505.03555}, 2025.
+\newblock Available at: \url{https://arxiv.org/abs/2505.03555}.
 
 \end{thebibliography}
