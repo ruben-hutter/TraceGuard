@@ -1,7 +1,7 @@
 % !TEX root = ../Thesis.tex
 \chapter{Background}
 
-This chapter establishes the theoretical foundations necessary for understanding the taint-guided symbolic execution optimization presented in this thesis. We examine symbolic execution, taint analysis, control flow analysis, and the Angr framework.
+This chapter establishes the theoretical foundations necessary for understanding the taint-guided symbolic execution optimization presented in this thesis. We examine symbolic execution, program vulnerability analysis, taint analysis, control flow analysis, and the Angr\footnote{https://angr.io/} framework.
 
 \section{Symbolic Execution}
 
@@ -11,15 +11,19 @@ A fundamental challenge in symbolic execution is the path explosion problem. As 
 
 Traditional symbolic execution typically employs a forward approach, starting from the program's entry point and exploring paths toward potential targets. However, this method may struggle to reach deeply nested functions or specific program locations of interest. Backward symbolic execution, conversely, begins from target locations and works backwards to identify input conditions that can reach those targets. Compositional approaches combine both techniques by analyzing individual functions in isolation and then reasoning about their interactions.
 
-The scalability challenges have motivated optimization approaches including state merging \cite{kuznetsov_efficient_2012}, veritesting \cite{avgerinos_enhancing_2014}, and compilation-based symbolic execution \cite{poeplau_symbolic_2020}. These optimization techniques form the foundation for more targeted analysis approaches that focus computational resources on security-relevant program behaviors.
+\section{Program Vulnerability Analysis}
+
+Software vulnerabilities represent flaws in program logic or implementation that can be exploited by malicious actors to compromise system security. Understanding these vulnerabilities is crucial for developing effective analysis techniques that can detect them before deployment.
+
+Traditional testing approaches often fail to discover these vulnerabilities because they typically occur only under specific input conditions that are unlikely to be encountered through random testing. Static analysis can identify potential vulnerabilities but often produces high false positive rates due to conservative approximations required for soundness. Dynamic analysis provides precise information about actual program execution but is limited to the specific inputs and execution paths exercised during testing.
+
+Symbolic execution addresses these limitations by systematically exploring multiple execution paths and generating inputs that trigger different program behaviors. However, the path explosion problem means that uniform exploration strategies may spend significant computational resources on paths that are unlikely to contain security vulnerabilities. This motivates the development of security-focused analysis techniques that prioritize exploration of paths involving user-controlled data, as these represent the primary attack vectors for most software vulnerabilities.
 
 \section{Taint Analysis}
 
 Taint analysis tracks the propagation of data derived from untrusted sources throughout program execution. Data originating from designated sources (such as user input functions like \texttt{fgets}, \texttt{gets}, \texttt{read}, or \texttt{scanf}) is marked as tainted. The analysis tracks how this tainted data flows through assignments, function calls, and other operations. When tainted data reaches a security-sensitive sink (such as buffer operations or system calls), the analysis flags a potential vulnerability.
 
 The propagation rules define how taint spreads through different operations: assignments involving tainted values result in tainted variables, arithmetic operations with tainted operands typically produce tainted results, and function calls with tainted arguments may result in tainted return values depending on the function's semantics. Dynamic taint analysis performs tracking during program execution, providing precise information about actual data flows while considering specific calling contexts and program states, resulting in reduced false positives compared to static analysis approaches.
-
-The combination of taint analysis and symbolic execution creates a powerful analysis framework. Symbolic execution can explore multiple program paths while taint analysis identifies which paths involve security-relevant data flows. Research has demonstrated effective integration through pipelined approaches that achieve significant performance improvements while maintaining precision \cite{ming_taintpipe_2015}. This integration enables targeted exploration of paths that process untrusted input, significantly improving the efficiency of vulnerability discovery.
 
 \section{Control Flow Analysis}
 
@@ -37,4 +41,4 @@ Angr is an open-source binary analysis platform providing comprehensive capabili
 
 Angr supports both static (\texttt{CFGFast}) and dynamic (\texttt{CFGEmulated}) CFG construction. Static analysis provides efficiency but may miss indirect calls, while dynamic analysis offers completeness at higher computational cost. The framework represents program states with register values, memory contents, path constraints, and execution history, providing APIs for state manipulation and exploration control through step functions and various exploration strategies including depth-first search, breadth-first search, and custom heuristics.
 
-The framework's extensible architecture enables integration of custom analysis techniques, making it particularly suitable for implementing novel symbolic execution optimizations. Multiple symbolic execution frameworks address different domains and applications. KLEE \cite{cadar_klee_2008} focuses on automatic test generation for C programs, SAGE \cite{godefroid_automated_2008} specializes in binary whitebox fuzzing for vulnerability discovery, CBMC \cite{clarke_behavioral_2003} offers bounded model checking for C/C++ programs with formal verification capabilities, and Java PathFinder \cite{visser_model_2003} provides symbolic execution for Java bytecode with emphasis on model checking applications. Angr's comprehensive binary analysis capabilities and extensible architecture make it particularly suitable for implementing the taint-guided exploration strategies presented in this thesis.
+The framework's extensible architecture enables integration of custom analysis techniques, making it particularly suitable for implementing novel symbolic execution optimizations. The symbolic execution landscape includes numerous frameworks targeting different domains and applications, ranging from language-specific tools like KLEE\footnote{https://klee-se.org/} for LLVM\footnote{https://llvm.org/} bitcode to specialized platforms for smart contract analysis. Angr's comprehensive binary analysis capabilities, multi-architecture support, and extensible Python-based architecture make it well-suited for implementing taint-guided exploration strategies.
