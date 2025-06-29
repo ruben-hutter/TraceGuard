@@ -27,13 +27,6 @@ Edmund Clarke, Daniel Kroening, and Karen Yorav.
 \newblock In \emph{Proceedings of the 40th Annual Design Automation
   Conference}, pages 368--371. ACM, 2003.
 
-\bibitem[Godefroid et~al.(2008)Godefroid, Levin, and
-  Molnar]{godefroid_automated_2008}
-Patrice Godefroid, Michael~Y. Levin, and David~A. Molnar.
-\newblock Automated whitebox fuzz testing.
-\newblock In \emph{Network and Distributed System Security Symposium}. Internet
-  Society, 2008.
-
 \bibitem[Kuznetsov et~al.(2012)Kuznetsov, Kinder, Bucur, and
   Candea]{kuznetsov_efficient_2012}
 Vitaly Kuznetsov, Johannes Kinder, Stefan Bucur, and George Candea.
@@ -47,6 +40,14 @@ Jiang Ming, Dinghao Wu, Jun Wang, Xinyu Xing, and Zhiqiang Liu.
 \newblock {TaintPipe}: Pipelined symbolic taint analysis.
 \newblock In \emph{24th USENIX Security Symposium}, pages 65--80. USENIX
   Association, 2015.
+
+\bibitem[Ognawala et~al.(2016)Ognawala, Ochoa, Pretschner, and
+  Limmer]{ognawala_macke_2016}
+Saahil Ognawala, Martín Ochoa, Alexander Pretschner, and Tobias Limmer.
+\newblock {MACKE}: Compositional analysis of low-level vulnerabilities with
+  symbolic execution.
+\newblock In \emph{Proceedings of the 31st Annual ACM Symposium on Applied
+  Computing}, SAC '16, pages 1623--1628. ACM, 2016.
 
 \bibitem[Poeplau and Francillon(2020)]{poeplau_symbolic_2020}
 Sebastian Poeplau and Aurélien Francillon.

@@ -47,15 +47,6 @@
 	pages = {209--224}
 }
 
-% SAGE - Microsoft's whitebox fuzzing
-@inproceedings{godefroid_automated_2008,
-	title = {Automated Whitebox Fuzz Testing},
-	booktitle = {Network and Distributed System Security Symposium},
-	publisher = {Internet Society},
-	author = {Godefroid, Patrice and Levin, Michael Y. and Molnar, David A.},
-	year = {2008}
-}
-
 % Java PathFinder
 @inproceedings{visser_model_2003,
 	title = {Model Checking Programs},
@@ -89,6 +80,17 @@
 	series = {PLDI '12}
 }
 
+% State merging with quantifiers - recent optimization
+@inproceedings{trabish_state_2023,
+	title = {State Merging with Quantifiers in Symbolic Execution},
+	booktitle = {Proceedings of the 31st ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering},
+	publisher = {ACM},
+	author = {Trabish, David and Rinetzky, Noam and Shoham, Sharon and Sharma, Vaibhav},
+	year = {2023},
+	pages = {1254--1266},
+	series = {ESEC/FSE 2023}
+}
+
 % Veritesting approach
 @inproceedings{avgerinos_enhancing_2014,
 	title = {Enhancing Symbolic Execution with Veritesting},
@@ -107,6 +109,26 @@
 	author = {Poeplau, Sebastian and Francillon, Aurélien},
 	year = {2020},
 	pages = {181--198}
+}
+
+% Machine learning approach to compiler optimization for symbolic execution
+@inproceedings{huang_leo_2018,
+	title = {Learning to Accelerate Symbolic Execution via Code Transformation},
+	booktitle = {Proceedings of the 2018 Joint Meeting on European Software Engineering Conference and Symposium on the Foundations of Software Engineering},
+	publisher = {ACM},
+	author = {Huang, Heqing and Yao, Peisen and Wu, Rongxin and Shi, Qingkai and Zhang, Charles},
+	year = {2018},
+	pages = {906--909}
+}
+
+% Recent compiler optimization impact study
+@inproceedings{chen_compiler_2024,
+	title = {When Compiler Optimizations Meet Symbolic Execution: An Empirical Study},
+	booktitle = {Proceedings of the 2024 ACM SIGSAC Conference on Computer and Communications Security},
+	publisher = {ACM},
+	author = {Chen, Hongxu and Liu, Yinxing and Li, Yuekang and Chen, Bihuan and Xie, Xiaofei and Wu, Xiuheng and Liu, Yang},
+	year = {2024},
+	pages = {421--435}
 }
 
 % TAINT ANALYSIS
@@ -128,6 +150,40 @@
 	publisher = {Internet Society},
 	author = {Newsome, James and Song, Dawn},
 	year = {2005}
+}
+
+% Recent compositional taint analysis
+@inproceedings{banerjee_compositional_2023,
+	title = {Compositional Taint Analysis for Enforcing Security Policies at Scale},
+	booktitle = {Proceedings of the 31st ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering},
+	publisher = {ACM},
+	author = {Banerjee, Subarno and Cui, Siwei and Emmi, Michael and Filieri, Antonio and Hadarean, Liana and Li, Peixuan and Luo, Linghui and Piskachev, Goran and Rosner, Nico and Sengupta, Aritra and Tripp, Omer and Wang, Jingbo},
+	year = {2023},
+	pages = {1598--1610},
+	series = {ESEC/FSE 2023}
+}
+
+% Static program analysis assisted dynamic taint tracking
+@article{xu_static_2012,
+	title = {Static Program Analysis Assisted Dynamic Taint Tracking for Software Vulnerability Discovery},
+	journal = {Computers \& Security},
+	author = {Xu, Wei and Bhatkar, Sandeep and Sekar, R.},
+	year = {2012},
+	volume = {31},
+	number = {4},
+	pages = {469--482},
+	doi = {10.1016/j.cose.2012.02.001}
+}
+
+% Exploitability assessment using taint-guided exploration
+@article{wang_tunter_2023,
+	title = {Tunter: Assessing Exploitability of Vulnerabilities with Taint-Guided Exploitable States Exploration},
+	journal = {Computers \& Security},
+	author = {Wang, Ruipeng and Chen, Kaixiang and Jia, Yueming and Wang, Yinzhi and Zhang, Kehuan},
+	year = {2023},
+	volume = {124},
+	pages = {102942},
+	doi = {10.1016/j.cose.2022.102942}
 }
 
 % ANGR FRAMEWORK
@@ -161,6 +217,112 @@
 	publisher = {Internet Society},
 	author = {Stephens, Nick and Grosen, John and Salls, Christopher and Dutcher, Audrey and Wang, Ruoyu and Corbetta, Jacopo and Shoshitaishvili, Yan and Kruegel, Christopher and Vigna, Giovanni},
 	year = {2016}
+}
+
+% QSYM - practical concolic execution for hybrid fuzzing
+@inproceedings{yun_qsym_2018,
+	title = {{QSYM}: A Practical Concolic Execution Engine Tailored for Hybrid Fuzzing},
+	booktitle = {27th USENIX Security Symposium},
+	publisher = {USENIX Association},
+	author = {Yun, Insu and Lee, Sangho and Xu, Meng and Jang, Yeongjin and Paek, Taesoo},
+	year = {2018},
+	pages = {745--761}
+}
+
+% SAVIOR - bug-driven hybrid testing
+@inproceedings{chen_savior_2020,
+	title = {{SAVIOR}: Towards Bug-Driven Hybrid Testing},
+	booktitle = {2020 IEEE Symposium on Security and Privacy},
+	publisher = {IEEE},
+	author = {Chen, Yaohui and Li, Peng and Xu, Jun and Guo, Shengjian and Zhou, Rundong and Zhang, Yulong and Wei, Tao and Lu, Long},
+	year = {2020},
+	pages = {1580--1596}
+}
+
+% Recent hybrid fuzzing survey
+@inproceedings{li_survey_2020,
+	title = {A Survey of Hybrid Fuzzing based on Symbolic Execution},
+	booktitle = {Proceedings of the 2020 International Conference on Cyberspace Innovation of Advanced Technologies},
+	publisher = {ACM},
+	author = {Li, Peng and Chen, Yaohui and Xu, Jun and Zhou, Rundong},
+	year = {2020},
+	pages = {424--431}
+}
+
+% PATH PRIORITIZATION STRATEGIES
+
+% Coverage-guided techniques
+@inproceedings{bohme_coverage_2016,
+	title = {Coverage-based Greybox Fuzzing as Markov Chain},
+	booktitle = {Proceedings of the 2016 ACM SIGSAC Conference on Computer and Communications Security},
+	publisher = {ACM},
+	author = {Böhme, Marcel and Pham, Van-Thuan and Roychoudhury, Abhik},
+	year = {2016},
+	pages = {1032--1043}
+}
+
+% Directed fuzzing approach
+@inproceedings{bohme_directed_2017,
+	title = {Directed Greybox Fuzzing},
+	booktitle = {Proceedings of the 2017 ACM SIGSAC Conference on Computer and Communications Security},
+	publisher = {ACM},
+	author = {Böhme, Marcel and Pham, Van-Thuan and Nguyen, Manh-Dung and Roychoudhury, Abhik},
+	year = {2017},
+	pages = {2329--2344}
+}
+
+% SECURITY-FOCUSED ANALYSIS
+
+% SeaHorn verification framework
+@inproceedings{gurfinkel_seahorn_2015,
+	title = {The {SeaHorn} Verification Framework},
+	booktitle = {Computer Aided Verification},
+	publisher = {Springer},
+	author = {Gurfinkel, Arie and Kahsai, Temesghen and Komuravelli, Anvesh and Navas, Jorge A.},
+	year = {2015},
+	pages = {343--361}
+}
+
+% SMACK LLVM-based verifier
+@inproceedings{rakamaric_smack_2014,
+	title = {{SMACK}: Decoupling Source Language Details from Verifier Implementations},
+	booktitle = {Computer Aided Verification},
+	publisher = {Springer},
+	author = {Rakamarić, Zvonimir and Emmi, Michael},
+	year = {2014},
+	pages = {106--113}
+}
+
+% RECENT ADVANCES (2023-2024)
+
+% SymQEMU - compilation-based symbolic execution
+@inproceedings{poeplau_symqemu_2021,
+	title = {{SymQEMU}: Compilation-based Symbolic Execution for Binaries},
+	booktitle = {Network and Distributed System Security Symposium},
+	publisher = {Internet Society},
+	author = {Poeplau, Sebastian and Francillon, Aurélien},
+	year = {2021}
+}
+
+% Machine learning for fuzzing optimization
+@inproceedings{rajpal_learning_2017,
+	title = {Not All Bytes are Equal: Neural Byte Sieve for Fuzzing},
+	booktitle = {arXiv preprint arXiv:1711.04596},
+	author = {Rajpal, Mohit and Blum, William and Singh, Rishabh},
+	year = {2017}
+}
+
+% COMPOSITIONAL ANALYSIS
+
+% MACKE - compositional analysis with symbolic execution
+@inproceedings{ognawala_macke_2016,
+	title = {{MACKE}: Compositional Analysis of Low-Level Vulnerabilities with Symbolic Execution},
+	booktitle = {Proceedings of the 31st Annual ACM Symposium on Applied Computing},
+	publisher = {ACM},
+	author = {Ognawala, Saahil and Ochoa, Martín and Pretschner, Alexander and Limmer, Tobias},
+	year = {2016},
+	pages = {1623--1628},
+	series = {SAC '16}
 }
 
 % ONLINE RESOURCES (keep minimal)

@@ -1,35 +1,12 @@
 % !TEX root = ../Thesis.tex
 \chapter{Related Work}
 
-% TODO: Evtl. already mentioned in background chapter. Here other approaches to symbolic execution, like the Paper: "MACKE: Compositional Analysis of Low-Level Vulnerabilities with Symbolic Execution"
+This chapter examines specific approaches to improving symbolic execution effectiveness for vulnerability discovery, focusing on methodological innovations that address different aspects of the scalability challenge.
 
-\section{Symbolic Execution Optimization}
-\subsection{Path Prioritization Strategies}
-% BugRedux, SAGE, KLEE optimizations
-% Comparison with coverage-guided approaches
+\section{Compositional Analysis: MACKE}
 
-\subsection{Hybrid Analysis Techniques}
-% Concolic execution (SAGE, CUTE)
-% Combination of static and dynamic analysis
+MACKE \cite{ognawala_macke_2016} introduces a compositional approach that performs symbolic execution on individual program functions in isolation, then combines results using static analysis and inter-procedural path feasibility checking. The tool employs a three-step process: first analyzing functions separately to achieve higher coverage, then using compositional reasoning to reduce false positives, and finally assigning severity scores to reported vulnerabilities. MACKE demonstrated superior coverage compared to forward symbolic execution on real-world programs including Flex, Grep, and Bzip2, while providing significantly fewer false positives than pure static analysis approaches.
 
-\section{Taint Analysis in Program Analysis}
-\subsection{Static Taint Analysis}
-% FlowDroid, SPARTA, commercial tools
-% Advantages and limitations
+\section{Compilation-Based Execution: SymCC}
 
-\subsection{Dynamic Taint Analysis}
-% TaintDroid, Triton, Intel Pin-based tools
-% Performance overhead and precision trade-offs
-
-\section{Security-Focused Program Analysis}
-\subsection{Vulnerability Discovery Tools}
-% CBMC, SMACK, SeaHorn
-% Directed testing approaches
-
-\subsection{Fuzzing with Symbolic Execution}
-% Driller, QSYM, hybrid fuzzing
-% Integration strategies and effectiveness
-
-\section{TraceGuard's Unique Contributions}
-% How your approach differs from existing work
-% Novel aspects of taint-guided symbolic execution
+SymCC \cite{poeplau_symbolic_2020} revolutionized symbolic execution performance through a compilation-based approach that embeds symbolic execution directly into program binaries during compilation. Rather than interpreting intermediate representations at runtime, SymCC inserts symbolic computation code alongside concrete execution, achieving significant performance improvements with 10-12 $\times$ speedup over traditional approaches like KLEE and QSYM. This optimization enabled higher coverage analysis and led to the discovery of vulnerabilities in heavily tested projects such as OpenJPEG.
