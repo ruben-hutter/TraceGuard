@@ -1,0 +1,2 @@
+// Simple vulnerable program meta file
+void vulnerable_copy(char *input);
