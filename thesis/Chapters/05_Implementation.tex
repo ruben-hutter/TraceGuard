@@ -15,44 +15,44 @@ The implementation consists of five primary modules that work together to provid
 
 \begin{enumerate}
     \item \textbf{Binary Analysis and Project Setup:}
-    \begin{itemize}
-        \item Angr project initialization with automatic architecture detection
-        \item Control flow graph construction using \texttt{CFGFast} analysis
-        \item Function identification and symbol resolution
-        \item Meta file parsing for function signature information
-    \end{itemize}
+        \begin{itemize}
+            \item Angr project initialization with automatic architecture detection
+            \item Control flow graph construction using Angr's \texttt{CFGFast} analysis
+            \item Function identification and symbol resolution
+            \item Meta file parsing for function signature information
+        \end{itemize}
 
     \item \textbf{Taint Source Recognition and Hooking (Algorithm~\ref{alg:function_hooking}):}
-    \begin{itemize}
-        \item Comprehensive function hooking using Angr's \texttt{SimProcedure} framework
-        \item Input function detection for taint introduction (e.g., \texttt{fgets}, \texttt{scanf}, \texttt{read})
-        \item Generic function monitoring for taint propagation tracking
-        \item Architecture-specific parameter analysis (AMD64 and x86 support)
-    \end{itemize}
+        \begin{itemize}
+            \item Comprehensive function hooking using Angr's \texttt{SimProcedure} framework
+            \item Input function detection for taint introduction (e.g., \texttt{fgets}, \texttt{scanf}, \texttt{read})
+            \item Generic function monitoring for taint propagation tracking
+            \item Architecture-specific parameter analysis (AMD64 and x86 support)
+        \end{itemize}
 
     \item \textbf{Dynamic Taint Tracking (Algorithms~\ref{alg:taint_introduction} \& \ref{alg:taint_status_check}):}
-    \begin{itemize}
-        \item Symbolic variable naming with taint identifiers
-        \item Memory region tracking for tainted data
-        \item Inter-function taint propagation through parameter passing
-        \item Taint status verification for function calls
-    \end{itemize}
+        \begin{itemize}
+            \item Symbolic variable naming with taint identifiers
+            \item Memory region tracking for tainted data
+            \item Inter-function taint propagation through parameter passing
+            \item Taint status verification for function calls
+        \end{itemize}
 
     \item \textbf{Exploration Guidance (Algorithms~\ref{alg:state_classification}, \ref{alg:taint_score_calculation} \& \ref{alg:depth_penalties}):}
-    \begin{itemize}
-        \item Custom \texttt{TaintGuidedExploration} technique implementation
-        \item State classification and prioritization based on taint interaction
-        \item Adaptive scoring with configurable thresholds
-        \item Integration with Angr's simulation manager
-    \end{itemize}
+        \begin{itemize}
+            \item Custom \texttt{TaintGuidedExploration} technique implementation
+            \item State classification and prioritization based on taint interaction
+            \item Adaptive scoring with configurable thresholds
+            \item Integration with Angr's simulation manager
+        \end{itemize}
 
     \item \textbf{Analysis Coordination and Reporting:}
-    \begin{itemize}
-        \item Comprehensive logging and debugging capabilities
-        \item Performance metrics collection
-        \item Visualization integration with Schnauzer framework
-        \item Result analysis and interpretation
-    \end{itemize}
+        \begin{itemize}
+            \item Comprehensive logging and debugging capabilities
+            \item Performance metrics collection
+            \item Visualization integration with Schnauzer framework
+            \item Result analysis and interpretation
+        \end{itemize}
 \end{enumerate}
 
 \subsection{Workflow Overview}
@@ -165,9 +165,9 @@ Architecture detection occurs automatically during project initialization, ensur
 
 \subsection{Meta File Integration}
 
-TraceGuard supports optional meta files that provide function signature information for enhanced analysis accuracy. Meta files are particularly important for preventing false positive taint detection that can occur when registers previously used by tainted parameters are later accessed by unrelated functions that do not actually process tainted data.
+TraceGuard supports optional meta files that provide function signature information for enhanced analysis accuracy. The tool automatically searches for meta files in the same directory as the target binary, using the pattern \texttt{<binary\_name>.meta}.
 
-The meta file parser supports C-like function signatures:
+Meta files prevent false positive taint detection that can occur when registers previously used by tainted parameters are later accessed by unrelated functions that do not actually process tainted data. The meta file parser supports C-like function signatures:
 
 \begin{verbatim}
 void process_data(const char *input, const char *fixed);
@@ -175,7 +175,9 @@ void analyze_string(const char *str);
 int helper_function(char *buffer, int size, const char *format);
 \end{verbatim}
 
-The parser extracts function names and parameter counts, enabling more precise taint analysis for user-defined functions. This precision is crucial for accurate taint tracking, as it allows the system to check only the relevant number of parameters rather than examining all available registers, which could lead to incorrect taint classifications.
+The parser extracts function names and parameter counts, enabling precise taint analysis by checking only the relevant number of parameters rather than examining all available registers. This precision is crucial for accurate taint tracking and prevents incorrect taint classifications.
+
+Alternatively, custom meta files can be specified using the \texttt{--meta-file} command-line option for non-standard naming conventions or when meta files are located in different directories.
 
 \section{Usage and Configuration}\label{sec:usage_configuration}
 
@@ -187,24 +189,49 @@ TraceGuard provides two primary entry points depending on the desired analysis m
 
 \textbf{Terminal-Only Analysis:}
 \begin{verbatim}
-python taint_se.py <binary_path>
+python scripts/taint_se.py <binary_path> [options]
 \end{verbatim}
 
 \textbf{Analysis with Visualization:}
 \begin{verbatim}
-python main.py <binary_path>
+python scripts/main.py <binary_path> [options]
 \end{verbatim}
+
+The tool supports several command-line options for customizing analysis behavior:
+
+\begin{itemize}
+    \item \texttt{--verbose, -v}: Enable verbose logging output for detailed analysis tracking
+    \item \texttt{--debug}: Enable debug-level logging with comprehensive state information
+    \item \texttt{--meta-file <path>}: Specify custom meta file for function parameter counts
+    \item \texttt{--show-libc-prints}: Display details for hooked libc function calls
+    \item \texttt{--show-syscall-prints}: Display details for hooked system calls
+\end{itemize}
 
 The \texttt{main.py} entry point includes integration with the Schnauzer visualization framework, enabling interactive exploration of analysis results through graphical representations of call graphs, taint flow patterns, and execution paths.
 
-\textbf{Advanced Options:}
-\begin{itemize}
-    \item \texttt{--verbose}: Enable detailed execution logging
-    \item \texttt{--debug}: Enable comprehensive debugging output
-    \item \texttt{--meta-file}: Specify custom function signature file
-    \item \texttt{--show-libc-prints}: Display libc function call details
-    \item \texttt{--show-syscall-prints}: Display system call information
-\end{itemize}
+\subsection{Usage Examples}
+
+\textbf{Basic Analysis:}
+\begin{verbatim}
+# Compile example program
+make examples/program1
+
+# Run basic analysis
+python scripts/taint_se.py examples/program1 --verbose
+\end{verbatim}
+
+\textbf{Advanced Analysis with Meta File:}
+\begin{verbatim}
+# Analysis with custom function signatures
+python scripts/taint_se.py examples/program5 \
+--meta-file examples/program5.meta --debug
+\end{verbatim}
+
+\textbf{Visualization Mode:}
+\begin{verbatim}
+# Interactive analysis with Schnauzer
+python scripts/main.py examples/program3 --show-libc-prints
+\end{verbatim}
 
 \subsection{Integration Workflow}
 
