@@ -132,7 +132,7 @@ The \texttt{TaintGuidedExploration} class extends Angr's \texttt{ExplorationTech
 
 \textbf{Dynamic State Scoring:} Each symbolic execution state receives a numerical score computed through the \texttt{\_calculate\_taint\_score} method. The scoring algorithm combines multiple factors:
 \begin{itemize}
-    \item Base score from real-time taint tracking (\texttt{state.globals.get("taint\_score", 0)})
+    \item Base score from taint tracking (\texttt{state.globals.get("taint\_score", 0)})
     \item Contextual bonuses: $+3.0$ for execution within tainted functions, $+1.5$ for main function or entry points, $+1.0$ for exploration potential
     \item Depth penalties: $0.95 \times$ multiplier for execution depth $>200$, $0.9 \times$ for depth $>400$
     \item Minimum guaranteed score of $1.0$ to ensure continued exploration
