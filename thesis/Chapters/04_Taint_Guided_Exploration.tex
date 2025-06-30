@@ -1,7 +1,7 @@
 % !TEX root = ../Thesis.tex
-\chapter{Taint-Guided Exploration}
+\chapter{Taint-Guided Exploration}\label{ch:taint_guided_exploration}
 
-Having established the theoretical foundations in Chapter 2 and surveyed existing approaches in Chapter 3, this chapter presents the conceptual framework and algorithmic design of TraceGuard's taint-guided symbolic execution strategy. Rather than exploring all possible execution paths uniformly, TraceGuard prioritizes paths based on their interaction with potentially malicious user input, fundamentally addressing the path explosion problem through intelligent exploration guidance.
+Having established the theoretical foundations in Chapter~\ref{ch:background} and surveyed existing approaches in Chapter~\ref{ch:related_work}, this chapter presents the conceptual framework and algorithmic design of TraceGuard's taint-guided symbolic execution strategy. Rather than exploring all possible execution paths uniformly, TraceGuard prioritizes paths based on their interaction with potentially malicious user input, fundamentally addressing the path explosion problem through intelligent exploration guidance.
 
 The core insight underlying this approach is that security vulnerabilities are significantly more likely to occur in code paths that process external, user-controlled data. By tracking taint flow from input sources and using this information to guide symbolic execution, TraceGuard focuses computational resources on security-relevant program regions while avoiding exhaustive exploration of paths that operate solely on trusted internal data.
 
@@ -21,12 +21,12 @@ TraceGuard operates as a specialized program built on the Angr framework that tr
 
 Throughout the following algorithms, we use configurable parameters to maintain generality: $\alpha_{input}$ represents the score bonus for input function interactions, $\beta_{tainted}$ denotes the bonus for execution within tainted functions, $\gamma_{penalty}$ specifies the depth penalty multiplication factor, $\delta_{threshold}$ defines the depth threshold for penalty application, $\sigma_{min}$ sets the minimum exploration score, $\tau_{high}$ and $\tau_{medium}$ establish the priority classification thresholds, and $k$ determines the maximum number of active states. In our implementation, these parameters are set to $\alpha_{input} = 5.0$, $\beta_{tainted} = 3.0$, $\gamma_{penalty} = 0.95$, $\delta_{threshold} = 200$, $\sigma_{min} = 1.0$, $\tau_{high} = 6.0$, $\tau_{medium} = 2.0$, and $k = 15$.
 
-\section{Taint Source Recognition}
+\section{Taint Source Recognition}\label{sec:taint_source_recognition}
 
 TraceGuard identifies taint sources by hooking functions during program analysis. This hook-based approach enables runtime detection of external data entry points without requiring complex static analysis.
 
 \begin{algorithm}[H]
-\caption{Function Hooking Strategy}
+\caption{Function Hooking Strategy}\label{alg:function_hooking}
 \begin{algorithmic}[1]
 \Require Program binary $P$
 \State $CFG \gets \textsc{BuildControlFlowGraph}(P)$
@@ -45,7 +45,7 @@ The system uses two types of hooks: input function hooks that immediately mark d
 
 Input functions receive special treatment because they represent the primary vectors for external data entry. When these functions are called, the system automatically creates tainted symbolic data and registers the associated memory regions as containing potentially malicious content.
 
-\section{Dynamic Taint Tracking}
+\section{Dynamic Taint Tracking}\label{sec:dynamic_taint_tracking}
 
 TraceGuard tracks taint propagation through two complementary mechanisms: symbolic variable naming and memory region mapping. This approach ensures taint information persists across function calls and memory operations.
 
@@ -86,7 +86,7 @@ Symbolic variable naming creates a persistent taint identifier that follows data
 
 Additionally, memory region tracking maintains a mapping of tainted buffer addresses and sizes, enabling taint detection when pointers reference previously tainted memory locations.
 
-\section{Path Prioritization}
+\section{Path Prioritization}\label{sec:path_prioritization}
 
 TraceGuard implements a three-tier prioritization system that classifies symbolic execution states based on their calculated taint scores. This classification determines exploration order to focus computational resources on security-relevant paths.
 
@@ -138,11 +138,11 @@ A critical component of TraceGuard's practical viability lies in its adaptive st
 
 This adaptive approach ensures that TraceGuard maintains bounded computational requirements while maximizing the security relevance of explored paths, addressing both the theoretical challenge of path explosion and the practical constraints of finite computational resources.
 
-\section{Exploration Depth Control and Vulnerability Probability}
+\section{Exploration Depth Control and Vulnerability Probability}\label{sec:exploration_depth_control}
 
 TraceGuard prevents path explosion through multiple complementary techniques that limit exploration depth while maintaining sufficient coverage for vulnerability discovery. A fundamental principle underlying this approach is the inverse relationship between execution depth and vulnerability probability.
 
-The preference for shorter paths in vulnerability discovery is grounded in both theoretical security principles and empirical evidence from vulnerability research \cite{schwartz_all_2010}. Security vulnerabilities typically manifest near the boundary between external input and internal program logic, where insufficient validation or sanitization allows malicious data to corrupt program state. As execution depth increases beyond these initial input processing stages, several factors reduce vulnerability probability: (1) input data has undergone additional validation and transformation steps, (2) the program state becomes more complex and harder for attackers to predict and control, and (3) deeper code paths typically receive more thorough testing during development.
+The preference for shorter paths in vulnerability discovery is grounded in both theoretical security principles and empirical evidence from vulnerability research~\cite{schwartz_all_2010}. Security vulnerabilities typically manifest near the boundary between external input and internal program logic, where insufficient validation or sanitization allows malicious data to corrupt program state. As execution depth increases beyond these initial input processing stages, several factors reduce vulnerability probability: (1) input data has undergone additional validation and transformation steps, (2) the program state becomes more complex and harder for attackers to predict and control, and (3) deeper code paths typically receive more thorough testing during development.
 
 Research on real-world vulnerability databases demonstrates that critical security flaws such as buffer overflows and injection attacks are statistically more likely to occur in shallow call stacks near input sources than in deeply nested program logic. This observation aligns with attack surface theory, which suggests that the most accessible vulnerabilities are those that can be triggered with minimal program state setup, making them both more discoverable by automated tools and more attractive to attackers.
 

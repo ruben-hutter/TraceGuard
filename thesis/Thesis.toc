@@ -25,34 +25,36 @@
 \contentsline {section}{\numberline {4.5}Exploration Depth Control and Vulnerability Probability}{13}{section.33}%
 \contentsline {chapter}{\chapternumberline {5}Implementation}{15}{chapter.35}%
 \contentsline {section}{\numberline {5.1}System Architecture}{15}{section.36}%
-\contentsline {subsection}{\numberline {5.1.1}TraceGuard Framework Overview}{15}{subsection.37}%
-\contentsline {subsection}{\numberline {5.1.2}Core Components}{15}{subsection.38}%
-\contentsline {section}{\numberline {5.2}Angr Integration}{15}{section.39}%
-\contentsline {subsection}{\numberline {5.2.1}Custom Exploration Technique}{15}{subsection.40}%
-\contentsline {subsection}{\numberline {5.2.2}State Prioritization Implementation}{15}{subsection.51}%
-\contentsline {section}{\numberline {5.3}Taint Tracking Implementation}{16}{section.61}%
-\contentsline {subsection}{\numberline {5.3.1}Taint Propagation Engine}{16}{subsection.62}%
-\contentsline {subsection}{\numberline {5.3.2}Function Hook System}{16}{subsection.63}%
-\contentsline {section}{\numberline {5.4}Configuration and Extensibility}{16}{section.64}%
-\contentsline {subsection}{\numberline {5.4.1}Configuration Parameters}{16}{subsection.65}%
-\contentsline {subsection}{\numberline {5.4.2}Plugin Architecture}{16}{subsection.77}%
-\contentsline {chapter}{\chapternumberline {6}Evaluation}{17}{chapter.78}%
-\contentsline {section}{\numberline {6.1}Experimental Design}{17}{section.79}%
-\contentsline {subsection}{\numberline {6.1.1}Research Questions}{17}{subsection.80}%
-\contentsline {subsection}{\numberline {6.1.2}Evaluation Metrics}{17}{subsection.85}%
-\contentsline {section}{\numberline {6.2}Benchmark Programs}{17}{section.86}%
-\contentsline {subsection}{\numberline {6.2.1}Synthetic Benchmarks}{17}{subsection.87}%
-\contentsline {subsection}{\numberline {6.2.2}Real-World Programs}{17}{subsection.88}%
-\contentsline {section}{\numberline {6.3}Experimental Results}{17}{section.89}%
-\contentsline {subsection}{\numberline {6.3.1}Comparison with Standard Symbolic Execution}{17}{subsection.90}%
-\contentsline {subsection}{\numberline {6.3.2}Ablation Studies}{17}{subsection.91}%
-\contentsline {section}{\numberline {6.4}Case Studies}{17}{section.92}%
-\contentsline {subsection}{\numberline {6.4.1}Buffer Overflow Discovery}{17}{subsection.93}%
-\contentsline {subsection}{\numberline {6.4.2}Format String Vulnerability}{17}{subsection.94}%
-\contentsline {chapter}{\chapternumberline {7}Conclusion}{18}{chapter.95}%
-\contentsline {chapter}{\chapternumberline {8}Future Work}{19}{chapter.96}%
-\contentsline {chapter}{\chapternumberline {9}Usage of AI}{20}{chapter.97}%
+\contentsline {subsection}{\numberline {5.1.1}Core Design Principles}{16}{subsection.37}%
+\contentsline {section}{\numberline {5.2}Angr Integration Layer}{16}{section.38}%
+\contentsline {subsection}{\numberline {5.2.1}Custom Exploration Technique}{16}{subsection.39}%
+\contentsline {subsection}{\numberline {5.2.2}State Scoring Implementation}{17}{subsection.40}%
+\contentsline {section}{\numberline {5.3}Taint Tracking Implementation}{17}{section.41}%
+\contentsline {subsection}{\numberline {5.3.1}Taint Source Detection}{17}{subsection.42}%
+\contentsline {subsection}{\numberline {5.3.2}Taint Propagation Engine}{18}{subsection.43}%
+\contentsline {subsection}{\numberline {5.3.3}Inter-procedural Taint Flow}{18}{subsection.44}%
+\contentsline {section}{\numberline {5.4}Configuration and Usage}{19}{section.45}%
+\contentsline {subsection}{\numberline {5.4.1}Configuration System}{19}{subsection.46}%
+\contentsline {subsection}{\numberline {5.4.2}Integration Workflow}{19}{subsection.47}%
+\contentsline {subsection}{\numberline {5.4.3}Performance Considerations}{19}{subsection.48}%
+\contentsline {section}{\numberline {5.5}Implementation Validation}{20}{section.49}%
+\contentsline {chapter}{\chapternumberline {6}Evaluation}{21}{chapter.50}%
+\contentsline {section}{\numberline {6.1}Experimental Design}{21}{section.51}%
+\contentsline {subsection}{\numberline {6.1.1}Research Questions}{21}{subsection.52}%
+\contentsline {subsection}{\numberline {6.1.2}Evaluation Metrics}{21}{subsection.57}%
+\contentsline {section}{\numberline {6.2}Benchmark Programs}{21}{section.58}%
+\contentsline {subsection}{\numberline {6.2.1}Synthetic Benchmarks}{21}{subsection.59}%
+\contentsline {subsection}{\numberline {6.2.2}Real-World Programs}{21}{subsection.60}%
+\contentsline {section}{\numberline {6.3}Experimental Results}{21}{section.61}%
+\contentsline {subsection}{\numberline {6.3.1}Comparison with Standard Symbolic Execution}{21}{subsection.62}%
+\contentsline {subsection}{\numberline {6.3.2}Ablation Studies}{21}{subsection.63}%
+\contentsline {section}{\numberline {6.4}Case Studies}{21}{section.64}%
+\contentsline {subsection}{\numberline {6.4.1}Buffer Overflow Discovery}{21}{subsection.65}%
+\contentsline {subsection}{\numberline {6.4.2}Format String Vulnerability}{21}{subsection.66}%
+\contentsline {chapter}{\chapternumberline {7}Conclusion}{22}{chapter.67}%
+\contentsline {chapter}{\chapternumberline {8}Future Work}{23}{chapter.68}%
+\contentsline {chapter}{\chapternumberline {9}Usage of AI}{24}{chapter.69}%
 \vspace {2em}
-\contentsline {chapter}{Bibliography}{21}{appendix*.98}%
-\contentsline {appendix}{\chapternumberline {A}Appendix}{22}{appendix.99}%
+\contentsline {chapter}{Bibliography}{25}{appendix*.70}%
+\contentsline {appendix}{\chapternumberline {A}Appendix}{26}{appendix.71}%
 \vspace {2em}

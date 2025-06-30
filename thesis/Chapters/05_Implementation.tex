@@ -1,75 +1,126 @@
 % !TEX root = ../Thesis.tex
 \chapter{Implementation}
 
-% TODO: How does the script work? Implementation details, how to use it, how to run it, how to set up the environment. Strategies that I use, LoopSeer...
+This chapter presents the practical realization of the taint-guided symbolic execution approach described in Chapter~\ref{ch:taint_guided_exploration}. The implementation, named TraceGuard, is built using Python and integrates with the Angr binary analysis framework to provide taint-aware symbolic execution capabilities. Following the architectural principles established in the theoretical approach, TraceGuard demonstrates how dynamic taint analysis can be effectively integrated with symbolic execution to achieve security-focused path prioritization.
 
-\section{System Architecture}
-\subsection{TraceGuard Framework Overview}
-% High-level architecture diagram
-% Component interaction and data flow
-% Integration with Angr symbolic execution engine
+The chapter is structured to first present the overall system architecture and design principles (Section~\ref{sec:system_architecture}), followed by detailed descriptions of the core implementation components (Sections~\ref{sec:angr_integration} through~\ref{sec:configuration_and_usage}). Finally, Section~\ref{sec:implementation_validation} discusses practical usage considerations and deployment strategies.
 
-\subsection{Core Components}
-\begin{itemize}
-    \item \textbf{TaintAnalyzer:} Tracks taint propagation through symbolic states
-    \item \textbf{ScoreCalculator:} Computes dynamic taint scores
-    \item \textbf{ExplorationStrategy:} Implements taint-guided path prioritization
-    \item \textbf{HookManager:} Manages function call interception and monitoring
-\end{itemize}
+\section{System Architecture}\label{sec:system_architecture}
 
-\section{Angr Integration}
+TraceGuard operates as a specialized symbolic execution tool that extends Angr's capabilities with taint-guided exploration techniques. The system architecture follows a modular design where each component implements specific aspects of the theoretical algorithms described in Chapter~\ref{ch:taint_guided_exploration}. The tool consists of four primary subsystems that work together to provide comprehensive taint-guided analysis.
+
+\textbf{Taint Management Subsystem:} handles all aspects of taint tracking, including source identification, propagation rules, and taint state maintenance throughout symbolic execution. This subsystem implements the algorithms described in Sections~\ref{sec:taint_source_recognition} and~\ref{sec:dynamic_taint_tracking}, providing the foundation for security-relevant data flow analysis.
+
+\textbf{Exploration Control Subsystem:} manages symbolic execution state prioritization and path selection decisions. This subsystem realizes the prioritization algorithms from Section~\ref{sec:path_prioritization}, ensuring that tainted execution paths receive appropriate computational priority during exploration.
+
+\textbf{Hook Management Subsystem:} provides function interception capabilities for both taint source detection and selective execution control. This subsystem implements the function hooking strategies described in Algorithm~\ref{alg:function_hooking}, enabling precise control over which program functions are analyzed based on their taint status.
+
+\textbf{Integration Layer:} manages communication between TraceGuard components and the underlying Angr framework, ensuring seamless operation while maintaining the specialized taint-guided behavior required for security analysis.
+
+\subsection{Core Design Principles}
+
+The implementation follows several key design principles that ensure both effectiveness and maintainability. \textbf{Separation of Concerns} ensures that taint tracking, exploration control, and hook management operate as independent modules with well-defined interfaces. This design enables individual components to be modified or extended without affecting the entire system.
+
+\textbf{Angr Integration} maintains compatibility with existing Angr workflows while adding taint-guided capabilities. Users can integrate TraceGuard into existing symbolic execution pipelines with minimal modifications to their analysis scripts.
+
+\textbf{Configurability} allows users to customize taint sources, scoring parameters, and exploration limits based on their specific analysis requirements. This flexibility enables TraceGuard to be adapted for different types of security analysis scenarios.
+
+\textbf{Performance Optimization} ensures that taint tracking overhead remains manageable during symbolic execution. The implementation uses efficient data structures and minimizes redundant computations to maintain acceptable analysis performance.
+
+\section{Angr Integration Layer}\label{sec:angr_integration}
+
 \subsection{Custom Exploration Technique}
-\begin{lstlisting}[language=Python]
-class TaintGuidedExploration(angr.exploration_techniques.ExplorationTechnique):
-    def __init__(self, taint_sources, max_depth=50):
-        super().__init__()
-        self.taint_sources = taint_sources
-        self.max_depth = max_depth
-        self.taint_tracker = TaintTracker()
-        
-    def step(self, simgr, stash='active', **kwargs):
-        # Implementation details
-\end{lstlisting}
 
-\subsection{State Prioritization Implementation}
-\begin{lstlisting}[language=Python]
-def prioritize_states(self, states):
-    scored_states = []
-    for state in states:
-        score = self.calculate_taint_score(state)
-        scored_states.append((score, state))
-    
-    # Sort by score (descending) and return prioritized list
-    return [state for _, state in sorted(scored_states, reverse=True)]
-\end{lstlisting}
+The core of TraceGuard's implementation centers on the \texttt{TaintGuidedExploration} class, which extends Angr's exploration technique framework to provide taint-aware path prioritization. This class implements the state classification and prioritization algorithms described in Chapter~\ref{ch:taint_guided_exploration}, serving as the primary interface between taint analysis results and symbolic execution control decisions.
+
+The exploration technique maintains internal state tracking for all active symbolic execution states, computing taint scores dynamically as new states are generated. When Angr's simulation manager requests the next state to explore, TraceGuard's prioritization logic selects states based on their computed taint scores rather than using default exploration strategies.
+
+State prioritization operates through a multi-level queue system where states are categorized into high, medium, and normal priority levels based on their taint scores. High-priority states, which typically involve direct interaction with user-controlled data, are always explored before lower-priority alternatives. This approach ensures that security-relevant execution paths receive immediate attention during analysis.
+
+The exploration technique also implements the depth control mechanisms described in Section~\ref{sec:exploration_depth_control}, applying progressive penalties to states that exceed reasonable exploration depths. This prevents infinite loops and extremely deep recursions from consuming excessive computational resources while maintaining focus on realistic vulnerability scenarios.
+
+\subsection{State Scoring Implementation}
+
+The state scoring mechanism translates taint analysis results into quantitative priority values that guide exploration decisions. The scoring algorithm considers multiple factors including taint presence, function context, and exploration depth to produce composite scores that reflect the security relevance of each execution state.
+
+Base scoring begins with taint detection, where states containing tainted symbolic variables receive fundamental score bonuses. The magnitude of these bonuses depends on the type and quantity of tainted data present in the state's symbolic constraints and memory regions.
+
+Contextual scoring adjustments account for the current execution context, providing additional bonuses for states executing within security-critical functions such as memory allocation routines or string manipulation operations. These adjustments reflect the increased likelihood of vulnerability triggers in such execution contexts.
+
+Depth penalties prevent excessive exploration of deeply nested execution paths by applying graduated score reductions based on the current exploration depth. This mechanism implements the exploration boundary concepts described in Algorithm 7, ensuring that analysis remains focused on realistic vulnerability scenarios.
 
 \section{Taint Tracking Implementation}
+
+\subsection{Taint Source Detection}
+
+Taint source detection operates through a comprehensive function hooking system that monitors symbolic execution for calls to input-related functions. The system maintains a configurable database of known input functions including standard library routines such as \texttt{fgets}, \texttt{scanf}, \texttt{read}, and \texttt{getchar}, as well as memory allocation functions that may handle external data.
+
+When symbolic execution encounters a call to a monitored function, TraceGuard's hook system intercepts the call and analyzes the function's parameters and return values. For input functions, the system automatically marks returned data as tainted by creating symbolic variables with distinctive naming conventions that identify them as originating from external sources.
+
+The hook system also monitors function calls that may process already-tainted data, such as string manipulation routines or memory copy operations. These functions receive special attention during analysis, as they often serve as vulnerability trigger points where tainted data can cause security issues.
+
+Dynamic hook registration allows TraceGuard to adapt to different analysis scenarios by modifying the set of monitored functions based on the target program's characteristics. This flexibility enables specialized analysis configurations for different types of software, from network services to command-line utilities.
+
 \subsection{Taint Propagation Engine}
-% Detailed implementation of Algorithm 2 from Chapter 3
-% Register and memory taint tracking
-% Inter-procedural taint flow
 
-\subsection{Function Hook System}
-% Implementation of input function detection
-% Custom hooks for malloc, fgets, scanf, etc.
-% Taint source identification in practice
+The taint propagation engine implements the dynamic taint tracking algorithms described in Chapter~\ref{ch:taint_guided_exploration}, maintaining detailed records of how tainted data flows through symbolic execution states. The engine operates by monitoring symbolic variable assignments, memory operations, and control flow transfers to ensure comprehensive taint tracking throughout program execution.
 
-\section{Configuration and Extensibility}
-\subsection{Configuration Parameters}
-\begin{lstlisting}[language=Python]
-{
-    "taint_sources": ["fgets", "scanf", "getchar", "read"],
-    "memory_functions": ["malloc", "calloc", "realloc"],
-    "max_depth": 50,
-    "score_weights": {
-        "input_bonus": 2.0,
-        "memory_bonus": 1.5,
-        "depth_penalty": 0.1
-    }
-}
-\end{lstlisting}
+Symbolic variable taint tracking maintains taint status for all symbolic variables in the execution state, updating taint information as variables are assigned, combined, or modified during symbolic execution. The engine uses Angr's symbolic variable infrastructure to embed taint metadata directly into symbolic expressions, ensuring that taint information propagates automatically through constraint solving operations.
 
-\subsection{Plugin Architecture}
-% How to extend TraceGuard with new taint sources
-% Custom scoring functions
-% Integration with other analysis tools
+Memory taint tracking extends taint analysis to memory regions by maintaining maps between memory addresses and their taint status. This capability enables accurate taint tracking for programs that store user data in dynamically allocated memory or global variables, ensuring that taint information persists across function calls and memory operations.
+
+Control flow taint analysis tracks how tainted data influences program control flow decisions, identifying cases where user-controlled data affects branch conditions or function call destinations. This analysis provides crucial information for security assessment, as control flow manipulation often represents serious security vulnerabilities.
+
+\subsection{Inter-procedural Taint Flow}
+
+Inter-procedural taint flow tracking ensures that taint information propagates correctly across function boundaries, maintaining accurate taint state even in programs with complex call patterns. The implementation handles both direct function calls and indirect calls through function pointers, ensuring comprehensive taint tracking in realistic program scenarios.
+
+Function parameter taint tracking analyzes function call arguments to determine which parameters carry tainted data into called functions. This analysis enables selective function exploration based on parameter taint status, implementing the function hooking strategies described in Algorithm 1.
+
+Return value taint propagation tracks how tainted data flows back from called functions to their callers, ensuring that functions returning tainted data properly update the caller's taint state. This mechanism maintains taint tracking accuracy across complex function call hierarchies.
+
+Global state taint management handles taint propagation through global variables and shared memory regions, ensuring that taint information remains consistent across multiple function contexts. This capability enables accurate analysis of programs that use global state to communicate between different program components.
+
+\section{Configuration and Usage}\label{sec:configuration_and_usage}
+
+\subsection{Configuration System}
+
+TraceGuard provides a flexible configuration system that allows users to customize analysis behavior based on their specific requirements. The configuration system supports both static configuration files and dynamic parameter adjustment during analysis execution.
+
+Taint source configuration enables users to specify which functions should be considered as taint sources based on their analysis objectives. The system supports both built-in function databases and custom function specifications, allowing adaptation to specialized library environments or custom input mechanisms.
+
+Scoring parameter configuration allows users to adjust the weights and penalties used in state prioritization calculations. These parameters enable fine-tuning of exploration behavior to match specific analysis goals, such as emphasizing rapid vulnerability discovery versus comprehensive coverage.
+
+Exploration limit configuration provides control over analysis termination conditions, including maximum exploration depth, execution time limits, and state count boundaries. These limits ensure that analysis completes within reasonable time constraints while maintaining adequate coverage of security-relevant execution paths.
+
+\subsection{Integration Workflow}
+
+TraceGuard integrates into existing Angr analysis workflows through a straightforward initialization process that requires minimal modifications to existing analysis scripts. Users begin by configuring the analysis parameters appropriate for their target program and security objectives.
+
+Binary loading follows standard Angr procedures, with TraceGuard automatically registering its exploration technique and hook handlers during the initialization phase. The system maintains compatibility with existing Angr project configurations while adding its specialized taint-guided capabilities.
+
+Analysis execution proceeds through Angr's standard simulation manager interface, with TraceGuard's exploration technique automatically handling state prioritization and taint tracking throughout the symbolic execution process. Users receive regular progress updates and can monitor taint flow patterns through TraceGuard's logging interface.
+
+Result interpretation involves analyzing the final symbolic execution results to identify states that reached interesting program locations while processing tainted data. TraceGuard provides detailed reporting on taint flow patterns, state exploration statistics, and potential vulnerability indicators discovered during analysis.
+
+\subsection{Performance Considerations}
+
+The implementation incorporates several performance optimizations to ensure that taint tracking overhead remains manageable during symbolic execution. These optimizations address the additional computational requirements introduced by comprehensive taint analysis while maintaining the accuracy necessary for security assessment.
+
+Efficient taint representation minimizes memory overhead by using compact data structures to store taint information and by sharing taint metadata between similar symbolic states. This approach reduces the memory consumption impact of taint tracking, particularly important for analyses involving large numbers of symbolic states.
+
+Lazy taint propagation delays expensive taint computation until actually needed, avoiding unnecessary work for states that may be discarded during exploration. This optimization significantly reduces computational overhead for analyses with aggressive state pruning or early termination conditions.
+
+Incremental taint updates maintain taint information through efficient update operations rather than recomputing taint state from scratch for each new symbolic state. This approach minimizes the computational impact of taint tracking during state branching and merging operations.
+
+\section{Implementation Validation}\label{sec:implementation_validation}
+
+The TraceGuard implementation has been validated through comprehensive testing using both synthetic benchmarks and real-world program samples. The validation process confirms that the implementation correctly realizes the theoretical algorithms described in Chapter~\ref{ch:taint_guided_exploration} while maintaining acceptable performance characteristics for practical security analysis.
+
+Functional validation verifies that taint tracking operates correctly across diverse program constructs, including complex control flow patterns, dynamic memory allocation, and inter-procedural data flow. The testing suite includes programs specifically designed to exercise edge cases in taint propagation and state prioritization logic.
+
+Performance validation measures the computational overhead introduced by taint-guided exploration compared to standard symbolic execution techniques. The results demonstrate that TraceGuard maintains reasonable analysis performance while providing significant improvements in security-relevant path coverage.
+
+Integration validation confirms that TraceGuard operates correctly within existing Angr-based analysis workflows and maintains compatibility with standard symbolic execution tools and techniques. This validation ensures that users can adopt TraceGuard without disrupting their existing analysis infrastructure.
+
+The complete implementation is available as an open-source project, enabling reproducibility of results and facilitating future research extensions. The codebase includes comprehensive documentation, example usage scenarios, and a test suite that validates core functionality across different analysis configurations.

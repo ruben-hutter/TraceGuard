@@ -1,5 +1,5 @@
 % !TEX root = ../Thesis.tex
-\chapter{Related Work}
+\chapter{Related Work}\label{ch:related_work}
 
 This chapter surveys existing research in symbolic execution optimization and taint analysis techniques, positioning TraceGuard within the broader landscape of security-focused program analysis. We examine three primary categories of approaches: optimization strategies for managing path explosion, integration techniques combining multiple analysis methods, and security-oriented targeting approaches.
 
@@ -29,7 +29,7 @@ Recent hybrid fuzzing approaches combine fuzzing with selective symbolic executi
 
 \section{Security-Focused Targeting and Research Gap}
 
-Security-focused symbolic execution approaches attempt to prioritize execution paths that are more likely to contain vulnerabilities. Static vulnerability detection approaches rely on pattern matching and dataflow analysis to identify potentially dangerous code locations, but cannot capture the dynamic taint propagation patterns that characterize real security vulnerabilities. Binary analysis frameworks like Angr \cite{shoshitaishvili_sok_2016} provide powerful symbolic execution capabilities but lack built-in security-focused exploration strategies.
+Security-focused symbolic execution approaches attempt to prioritize execution paths that are more likely to contain vulnerabilities. Static vulnerability detection approaches rely on pattern matching and dataflow analysis to identify potentially dangerous code locations, but cannot capture the dynamic taint propagation patterns that characterize real security vulnerabilities. Binary analysis frameworks like Angr~\cite{shoshitaishvili_sok_2016} provide powerful symbolic execution capabilities but lack built-in security-focused exploration strategies.
 
 The literature survey reveals critical limitations that TraceGuard addresses: (1) \textbf{Lack of Dynamic Taint-Guided Prioritization} - existing approaches focus on general path reduction rather than security-specific targeting; (2) \textbf{Reactive Integration Strategies} - current techniques use taint analysis in post-processing roles rather than as primary exploration drivers; (3) \textbf{Limited Security-Awareness} - optimizations treat all paths equally, failing to recognize higher vulnerability potential of taint-processing paths.
 
