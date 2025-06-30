@@ -668,7 +668,21 @@ class TaintAnalyzer:
 
         my_logger.info("Simulation complete.")
         self._report_simulation_results()
-        self._visualize_graph()
+
+        if self._is_server_running():
+            self._visualize_graph()
+
+    def _is_server_running(self):
+        """
+        Checks if the Schnauzer visualization server is running.
+        This is a placeholder function; actual implementation may vary.
+        """
+        try:
+            # You can add actual server checking logic here later
+            # For now, return False to disable visualization
+            return False
+        except Exception:
+            return False
 
     def _report_simulation_results(self):
         """
