@@ -1,97 +1,254 @@
-# Angr Tainted Input Analysis
+# Technical Documentation
 
-This tool uses symbolic execution with taint tracking to optimize binary analysis by selectively executing only the functions that process tainted input data.
+This directory contains the core implementation of the taint-guided symbolic execution engine. For project overview and quick start instructions, see the [main README](../README.md).
 
-## Features
+## Implementation Architecture
 
-- Tracks taint from stdin through function calls and data operations
-- Dynamically skips functions that don't operate on tainted data
-- Always executes essential functions (_start, main, input functions)
-- Provides detailed execution logs and statistics
-- Temporarily unhooks and executes real functions when tainted data is detected
+### Core Components
 
-## How It Works
+- **`main.py`**: Orchestrator script that manages Schnauzer visualization server and coordinates analysis execution
+- **`taint_se.py`**: Main analysis engine implementing the TaintAnalyzer class and core taint tracking logic  
+- **`taint_exploration.py`**: Custom Angr exploration technique for taint-guided state prioritization
+- **`constants.py`**: Configuration constants, function databases, and architecture-specific definitions
+- **`meta.py`**: Parser for function signature metadata files
+- **`visualize.py`**: Integration with Schnauzer for analysis visualization
 
-1. The analyzer hooks all input functions (fgets, gets, read, scanf) to mark their outputs as tainted data
-2. All user-defined functions are hooked with a checker that inspects parameters for taint
-3. When a function is called:
-   - Essential functions (main, _start, input functions) are always executed
-   - If any parameter is tainted, the function is temporarily unhooked and executed
-   - If no parameters are tainted, the function is skipped and a default return value is used
-4. Taint is tracked through variable naming (variables with "stdin" in their name)
-5. Detailed logs show which functions were executed vs. skipped and why
+## Dependencies
 
-## Requirements
+See the main [README](../README.md) for installation instructions. Key dependencies include:
 
-- Python 3.6+
-- angr
-- claripy
+- **angr>=9.2.146**: Binary analysis framework
+- **claripy>=9.2.146**: Symbolic constraint solver  
+- **matplotlib>=3.10.1**: Plotting and visualization
+- **schnauzer>=0.1.1**: Interactive analysis visualization
 
-Install dependencies:
+## API Reference
 
-```bash
-make install-deps
+### TaintAnalyzer Class
+
+The main analysis engine class that orchestrates the entire analysis process.
+
+```python
+from scripts.taint_se import TaintAnalyzer
+
+analyzer = TaintAnalyzer(binary_path, args)
+analyzer.run()
 ```
 
-## Usage
+#### Initialization Parameters
+
+- `binary_path` (str): Path to the binary file to analyze
+- `args` (dict): Configuration dictionary with the following optional keys:
+  - `verbose` (bool): Enable verbose logging output
+  - `debug` (bool): Enable debug-level logging
+  - `meta_file` (str): Path to custom meta file
+  - `show_libc_prints` (bool): Show libc function call details
+  - `show_syscall_prints` (bool): Show system call details  
+  - `viz_output` (str): Output directory for visualization files
+
+#### Key Methods
+
+- `run()`: Execute the complete analysis workflow
+- `_load_project()`: Initialize Angr project and load binary
+- `_build_cfg_and_function_map()`: Construct control flow graph and function database
+- `_setup_hooks()`: Install function hooks for taint tracking
+- `_analyze_with_simgr()`: Perform guided symbolic execution
+
+### Command Line Interface
 
 ```bash
-python analyse_taint.py <binary_path> [--quiet]
+# Main orchestrator with visualization
+python scripts/main.py <binary_path> [options]
+
+# Direct analysis engine
+python scripts/taint_se.py <binary_path> [options]
 ```
 
-Using the Makefile:
+#### Available Options
+
+- `--verbose`, `-v`: Enable verbose logging output
+- `--debug`, `-d`: Enable debug-level logging with detailed state information  
+- `--meta-file <path>`: Specify custom meta file for function parameter counts
+- `--show-libc-prints`: Show details for hooked libc function calls
+- `--show-syscall-prints`: Show details for hooked system calls
+- `--viz-output <path>`: Specify output path for visualization files
+
+#### Example Usage
 
 ```bash
-# Analyze program1 with detailed output
-make analyze
+# Analyze with full debugging output
+python scripts/taint_se.py examples/program1 --debug --verbose
 
-# Analyze program1 with minimal output
-make analyze-quiet
+# Use custom meta file
+python scripts/taint_se.py /path/to/binary --meta-file custom.meta
 
-# Analyze all test programs with detailed output
-make analyze-all
-
-# Analyze all test programs with minimal output
-make analyze-all-quiet
+# Analysis with visualization
+python scripts/main.py examples/program3 --show-libc-prints
 ```
 
-## Test Programs
+## Configuration and Customization
 
-Three test programs are included:
+### Meta Files
 
-1. `program1.c`: A simple program with one stdin input feeding into function calls
-2. `program2.c`: Program with two stdin inputs and various function call patterns
-3. `program3.c`: More complex program with three inputs and deeper function call chains
+Meta files provide function signature information for accurate parameter taint checking. They use a C-like syntax:
 
-Build the test programs:
+```c
+// Function signatures with parameter counts
+void process_data(const char *input, const char *fixed);
+void analyze_string(const char *str);
+int helper_function(char *buffer, int size, const char *format);
+```
+
+**Format Rules**:
+- One function signature per line
+- Comments start with `//` or `#` and are ignored
+- Trailing semicolons are optional
+- Function name is extracted from the rightmost identifier before parentheses
+- Parameter count is determined by comma-separated arguments (void = 0 parameters)
+
+### Taint Source Configuration
+
+Input functions are automatically detected from the built-in database in `constants.py`:
+
+```python
+INPUT_FUNCTION_NAMES = {
+    "fgets", "gets", "scanf", "fscanf", "fread", "read",
+    "getchar", "fgetc", "getline", "recv", "recvfrom"
+}
+```
+
+To add custom taint sources, modify this set or extend the `_is_input_function()` method in `TaintAnalyzer`.
+
+### Architecture-Specific Settings
+
+Register mappings for different architectures are defined in `constants.py`:
+
+```python
+# AMD64 calling convention
+AMD64_ARGUMENT_REGISTERS = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"]
+AMD64_RETURN_REGISTER = "rax"
+
+# X86 calling convention  
+X86_ARGUMENT_REGISTERS = []  # Stack-based
+X86_RETURN_REGISTER = "eax"
+```
+
+## Advanced Features
+
+### Custom Exploration Techniques
+
+The tool implements a custom Angr exploration technique in `taint_exploration.py`:
+
+```python
+from scripts.taint_exploration import TaintGuidedExploration
+
+# Custom state prioritization based on taint density
+technique = TaintGuidedExploration()
+simgr.use_technique(technique)
+```
+
+### Visualization Integration
+
+Schnauzer integration provides interactive analysis visualization:
+
+```python
+# Generate visualization data
+from scripts.visualize import generate_and_visualize_graph
+generate_and_visualize_graph(project, output_dir="viz_output")
+```
+
+The visualization includes:
+- Control flow graph with taint annotations
+- Function call hierarchy
+- Execution path exploration tree
+- Taint propagation flow diagrams
+
+### Logging and Debugging
+
+Comprehensive logging system with multiple levels:
+
+```python
+# Configure logging in your script
+import logging
+from scripts.taint_se import my_logger
+
+# Set logging level
+my_logger.setLevel(logging.DEBUG)
+
+# Custom log formatting
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+```
+
+### Performance Tuning
+
+Key parameters for optimization:
+
+```python
+# In constants.py
+MAX_TAINT_SIZE_BYTES = 1024      # Maximum size of tainted objects
+DEFAULT_BUFFER_SIZE = 256        # Input buffer simulation size
+TAINT_SCORE_DECAY_FACTOR = 0.9   # Score decay for distant taint
+```
+
+## Development Guidelines
+
+### Code Structure
+
+The implementation follows a modular design:
+
+```
+scripts/
+├── main.py              # Entry point and orchestration
+├── taint_se.py          # Core analysis engine (TaintAnalyzer class)
+├── taint_exploration.py # Custom Angr exploration technique
+├── constants.py         # Configuration and architecture definitions  
+├── meta.py             # Meta file parsing utilities
+└── visualize.py        # Schnauzer integration
+```
+
+### Adding New Features
+
+1. **New Taint Sources**: Add function names to `INPUT_FUNCTION_NAMES` in `constants.py`
+2. **Architecture Support**: Extend register mappings in architecture configuration
+3. **Custom Hooks**: Implement new SimProcedures and register in `_setup_hooks()`
+4. **Exploration Strategies**: Modify `TaintGuidedExploration` class for new prioritization logic
+
+### Testing
+
+Use the provided example programs for testing:
 
 ```bash
-make
+# Test basic functionality
+python scripts/taint_se.py examples/program1 --debug
+
+# Test complex scenarios
+python scripts/taint_se.py examples/program3 --verbose --show-libc-prints
+
+# Test with custom meta files
+python scripts/taint_se.py examples/program5 --meta-file examples/program5.meta
 ```
 
-## Implementation Details
+## Implementation Notes
 
-- Function hooks use SimProcedures to inspect parameters for taint
-- When a function needs execution (essential or tainted parameters):
-  1. The hook is temporarily removed
-  2. The function is executed in a new simulation manager
-  3. The return value is captured and returned
-  4. The hook is restored for future calls
-- Statistics are collected on executed vs. skipped functions
-- Verbosity control allows detailed or minimal output
+### Known Limitations
 
-## Limitations
+- **Taint Granularity**: Currently tracks taint at function parameter level; byte-level tracking within data structures is limited
+- **Indirect Calls**: Complex function pointer scenarios may not be fully captured
+- **Memory Layout**: Architecture-specific memory layouts may affect taint tracking accuracy
+- **Constraint Complexity**: Very complex path conditions may impact solver performance
 
-- Taint tracking is based on simple variable name matching
-- Taint propagation through complex data structures is limited
-- Function execution in a separate simulation manager may not fully propagate state changes
-- Loop bounds are set to prevent infinite execution but may limit analysis depth
-- Limited tracking of taint through arithmetic operations
+### Performance Considerations
 
-## Future Improvements
+- **State Explosion**: While reduced compared to standard symbolic execution, complex programs may still generate many states
+- **Memory Usage**: Large binaries or deep call stacks can consume significant memory
+- **Solver Timeouts**: Complex constraint systems may require timeout adjustments
 
-- More comprehensive taint tracking through memory operations
-- Enhanced taint propagation through arithmetic and logical operations
-- Better state merging after function execution
-- Support for custom taint sources beyond stdin
-- More sophisticated return value handling for skipped functions
+### Future Enhancements
+
+Potential improvements for the implementation:
+
+- Byte-level taint tracking for improved precision
+- Enhanced indirect call resolution
+- Support for additional architectures (ARM, RISC-V)
+- Integration with other analysis frameworks
+- Performance optimizations for large-scale binaries
