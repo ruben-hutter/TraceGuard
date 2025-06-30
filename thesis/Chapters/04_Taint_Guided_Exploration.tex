@@ -17,13 +17,15 @@ TraceGuard operates as a specialized program built on the Angr framework that tr
 
 \textbf{Exploration Boundaries:} Multiple complementary techniques prevent path explosion: execution length limits, loop detection, and graduated depth penalties that naturally favor shorter paths to vulnerability-triggering conditions.
 
+\vspace{1em}
+
 Throughout the following algorithms, we use configurable parameters to maintain generality: $\alpha_{input}$ represents the score bonus for input function interactions, $\beta_{tainted}$ denotes the bonus for execution within tainted functions, $\gamma_{penalty}$ specifies the depth penalty multiplication factor, $\delta_{threshold}$ defines the depth threshold for penalty application, $\sigma_{min}$ sets the minimum exploration score, $\tau_{high}$ and $\tau_{medium}$ establish the priority classification thresholds, and $k$ determines the maximum number of active states. In our implementation, these parameters are set to $\alpha_{input} = 5.0$, $\beta_{tainted} = 3.0$, $\gamma_{penalty} = 0.95$, $\delta_{threshold} = 200$, $\sigma_{min} = 1.0$, $\tau_{high} = 6.0$, $\tau_{medium} = 2.0$, and $k = 15$.
 
 \section{Taint Source Recognition}
 
 TraceGuard identifies taint sources by hooking functions during program analysis. This hook-based approach enables runtime detection of external data entry points without requiring complex static analysis.
 
-\begin{algorithm}
+\begin{algorithm}[H]
 \caption{Function Hooking Strategy}
 \begin{algorithmic}[1]
 \Require Program binary $P$
@@ -47,48 +49,48 @@ Input functions receive special treatment because they represent the primary vec
 
 TraceGuard tracks taint propagation through two complementary mechanisms: symbolic variable naming and memory region mapping. This approach ensures taint information persists across function calls and memory operations.
 
-\begin{algorithm}
+\begin{algorithm}[H]
 \caption{Taint Introduction at Input Functions}
 \begin{algorithmic}[1]
-\Require Input function call, Buffer address $buf$
-\State $taint\_id \gets$ \texttt{taint\_source\_} $+ function\_name + call\_id$
-\State $symbolic\_data \gets \textsc{CreateSymbolicVariable}(taint\_id)$
-\State $\textsc{StoreInMemory}(buf, symbolic\_data)$
-\State $tainted\_regions[buf] \gets buffer\_size$
-\State $taint\_score \gets taint\_score + \alpha_{input}$
+\Require Function call to input function $f$, State $s$
+\State $data \gets \textsc{CreateSymbolicData}(\text{taint\_source\_} + f.name)$
+\State $s.globals[\text{taint\_score}] \gets s.globals[\text{taint\_score}] + \alpha_{input}$
+\State $s.globals[\text{tainted\_functions}].add(f.name)$
+\If{$f$ involves memory allocation}
+    \State $buffer\_addr \gets \textsc{GetBufferAddress}(s)$
+    \State $buffer\_size \gets \textsc{GetBufferSize}(s)$
+    \State $s.globals[\text{tainted\_regions}].add((buffer\_addr, buffer\_size))$
+\EndIf
+\State \Return $data$
 \end{algorithmic}
 \end{algorithm}
 
-When input functions like \texttt{fgets} are encountered, the system creates symbolic variables with distinctive names that include the prefix ``\texttt{taint\_source\_}''. This naming convention enables efficient taint detection throughout subsequent execution by simply checking variable names.
+Symbolic variable naming creates a persistent taint identifier that follows data through symbolic operations. Memory region tracking maintains a mapping of tainted buffer addresses and sizes, enabling taint detection when pointers reference previously tainted memory locations.
 
-\begin{algorithm}
+\begin{algorithm}[H]
 \caption{Taint Status Check}
 \begin{algorithmic}[1]
-\Require Value $v$ to check
-\If{$v$ is symbolic}
-    \ForAll{variable name in $v$}
-        \If{name starts with \texttt{"taint\_source\_"}}
-            \State \Return \textsc{True}
+\Require State $s$, Variable or address $target$
+\If{$target$ is symbolic variable}
+    \State \Return $\text{taint\_source\_} \in target.name$
+\ElsIf{$target$ is memory address}
+    \ForAll{$(addr, size)$ in $s.globals[\text{tainted\_regions}]$}
+        \If{$addr \leq target < addr + size$}
+            \State \Return $\textsc{True}$
         \EndIf
     \EndFor
 \EndIf
-\Comment{Check if pointer references tainted memory}
-\If{$v$ can be evaluated to address $addr$}
-    \If{$addr$ in tainted memory regions}
-        \State \Return \textsc{True}
-    \EndIf
-\EndIf
-\State \Return \textsc{False}
+\State \Return $\textsc{False}$
 \end{algorithmic}
 \end{algorithm}
 
-The taint checking mechanism examines symbolic variable names to determine taint status. Additionally, memory region tracking maintains a mapping of tainted buffer addresses and sizes, enabling taint detection when pointers reference previously tainted memory locations.
+Additionally, memory region tracking maintains a mapping of tainted buffer addresses and sizes, enabling taint detection when pointers reference previously tainted memory locations.
 
 \section{Path Prioritization}
 
 TraceGuard implements a three-tier prioritization system that classifies symbolic execution states based on their calculated taint scores. This classification determines exploration order to focus computational resources on security-relevant paths.
 
-\begin{algorithm}
+\begin{algorithm}[H]
 \caption{State Classification and Prioritization}
 \begin{algorithmic}[1]
 \Require Active states $\mathcal{S}$, Thresholds $\tau_{high}$, $\tau_{medium}$
@@ -107,7 +109,7 @@ TraceGuard implements a three-tier prioritization system that classifies symboli
 
 The score calculation combines multiple factors to assess security relevance. Base scores come from taint interactions tracked by function hooks, with additional bonuses for execution within previously identified tainted functions and penalty reductions for excessive execution depth.
 
-\begin{algorithm}
+\begin{algorithm}[H]
 \caption{Taint Score Calculation}
 \begin{algorithmic}[1]
 \Require State $s$
@@ -124,24 +126,27 @@ The score calculation combines multiple factors to assess security relevance. Ba
 
 High-priority states typically represent paths directly processing user input or executing within security-critical functions. Medium-priority states show moderate taint relevance, while normal-priority states primarily handle untainted data. The system limits active states to prevent path explosion while maintaining adequate exploration coverage.
 
-\section{Exploration Depth Control}
+\subsection{Adaptive State Pool Management}
 
-TraceGuard prevents path explosion through multiple complementary techniques that limit exploration depth while maintaining sufficient coverage for vulnerability discovery.
+A critical component of TraceGuard's practical viability lies in its adaptive state pool management strategy, which prevents path explosion while maintaining exploration effectiveness. The system employs a bounded exploration approach that dynamically adjusts the active state pool based on both computational constraints and taint score distributions.
 
-\begin{algorithm}
-\caption{Exploration Technique Integration}
-\begin{algorithmic}[1]
-\Require Simulation manager $simgr$
-\State $simgr.\textsc{use\_technique}(\textsc{LengthLimiter}(1000))$
-\State $simgr.\textsc{use\_technique}(\textsc{LoopSeer}(cfg))$
-\State $simgr.\textsc{use\_technique}(\textsc{DepthFirstSearch}())$
-\State $simgr.\textsc{use\_technique}(\textsc{TaintGuidedExploration}())$
-\end{algorithmic}
-\end{algorithm}
+\textbf{Bounded Exploration Principle:} Rather than allowing unlimited state proliferation, TraceGuard maintains a fixed upper bound $k$ on concurrent active states. This constraint transforms the potentially infinite symbolic execution search space into a manageable, resource-bounded exploration process. The bound $k$ represents a balance between exploration thoroughness and computational tractability, typically set to a small constant based on empirical analysis of memory usage and solver performance.
 
-The system employs a coordinated set of exploration techniques that work together to manage path explosion. The \texttt{LengthLimiter} prevents individual paths from exceeding 1000 basic blocks, while \texttt{LoopSeer} detects and manages repetitive execution patterns. These techniques operate alongside the taint-guided prioritization to create an integrated exploration strategy.
+\textbf{Dynamic State Replacement:} When the exploration encounters new states that would exceed the bound $k$, the system employs a replacement strategy based on taint scores. New states are only admitted to the active pool if their taint scores exceed those of current low-priority states. This ensures that computational resources remain focused on the most security-relevant execution paths, even as the program exploration discovers new branches.
 
-\begin{algorithm}
+\textbf{Priority-Based Pruning:} The state pruning mechanism operates according to the established three-tier priority system. When resource limits are reached, normal-priority states are pruned first, followed by medium-priority states if necessary. High-priority states are preserved except in extreme cases where all active states achieve high-priority classification, at which point fine-grained score comparisons determine pruning order.
+
+This adaptive approach ensures that TraceGuard maintains bounded computational requirements while maximizing the security relevance of explored paths, addressing both the theoretical challenge of path explosion and the practical constraints of finite computational resources.
+
+\section{Exploration Depth Control and Vulnerability Probability}
+
+TraceGuard prevents path explosion through multiple complementary techniques that limit exploration depth while maintaining sufficient coverage for vulnerability discovery. A fundamental principle underlying this approach is the inverse relationship between execution depth and vulnerability probability.
+
+The preference for shorter paths in vulnerability discovery is grounded in both theoretical security principles and empirical evidence from vulnerability research \cite{schwartz_all_2010}. Security vulnerabilities typically manifest near the boundary between external input and internal program logic, where insufficient validation or sanitization allows malicious data to corrupt program state. As execution depth increases beyond these initial input processing stages, several factors reduce vulnerability probability: (1) input data has undergone additional validation and transformation steps, (2) the program state becomes more complex and harder for attackers to predict and control, and (3) deeper code paths typically receive more thorough testing during development.
+
+Research on real-world vulnerability databases demonstrates that critical security flaws such as buffer overflows and injection attacks are statistically more likely to occur in shallow call stacks near input sources than in deeply nested program logic. This observation aligns with attack surface theory, which suggests that the most accessible vulnerabilities are those that can be triggered with minimal program state setup, making them both more discoverable by automated tools and more attractive to attackers.
+
+\begin{algorithm}[H]
 \caption{Progressive Depth Penalties}
 \begin{algorithmic}[1]
 \Require State $s$ with execution depth $d$
@@ -153,16 +158,6 @@ The system employs a coordinated set of exploration techniques that work togethe
 \end{algorithmic}
 \end{algorithm}
 
-The depth penalty system gradually reduces state scores as execution depth increases, naturally prioritizing shorter paths that are more likely to trigger vulnerabilities quickly. This graduated approach avoids abrupt path termination while steering exploration toward more promising regions of the program space.
+The depth penalty system gradually reduces state scores as execution depth increases, naturally prioritizing shorter paths that are more likely to trigger vulnerabilities quickly. This graduated approach avoids abrupt path termination while steering exploration toward more promising regions of the program space. The system employs configurable depth thresholds ($\delta_{high}$, $\delta_{medium}$) and penalty factors ($\gamma_{high}$, $\gamma_{medium}$) to balance thorough exploration with computational efficiency.
 
-\section{Integration with Symbolic Execution Engines}
-
-TraceGuard's taint-guided exploration strategy integrates seamlessly with existing symbolic execution frameworks through a modular exploration technique architecture. The system operates as an enhancement layer that preserves the core functionality of symbolic execution while adding security-focused guidance.
-
-\textbf{Exploration Technique Stack:} TraceGuard functions as part of a coordinated exploration technique stack, working alongside complementary optimizations such as depth limiting, loop detection, and search heuristics. This cooperative approach ensures that multiple optimization strategies enhance rather than interfere with each other.
-
-\textbf{Hook-Based Monitoring:} The taint tracking system operates through strategic function hooking that observes program behavior without modifying core symbolic execution semantics. This non-intrusive approach maintains analysis accuracy while adding security-focused guidance capabilities.
-
-\textbf{State Annotation:} The system extends symbolic execution states with taint information and priority scores through the state's global storage mechanism, ensuring compatibility with existing state management infrastructure while providing the information needed for guided exploration.
-
-\textbf{Dynamic Adaptation:} The integration design allows for runtime adaptation of exploration strategies based on program characteristics and analysis progress, enabling TraceGuard to adjust its behavior for optimal performance across diverse program types and analysis scenarios.
+Beyond depth penalties, TraceGuard coordinates multiple exploration control mechanisms to manage path explosion effectively. These include execution length limitations to prevent infinite loops, cycle detection to avoid repetitive exploration patterns, and adaptive state management that maintains an optimal number of active states based on available computational resources.
