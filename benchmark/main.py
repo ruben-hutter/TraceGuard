@@ -1,13 +1,3 @@
-#!/usr/bin/env python3
-"""
-Benchmark Script for TraceGuard vs Classical Angr
-Author: Ruben Hutter
-University of Basel - Bachelor Thesis
-
-This script compares TraceGuard's taint-guided symbolic execution
-against classical Angr's default exploration strategy.
-"""
-
 import os
 import sys
 import time
@@ -19,6 +9,12 @@ from dataclasses import dataclass
 from typing import Optional, Dict, Any
 import angr
 import json
+
+# Add the scripts directory to the Python path for direct imports
+script_dir = Path(__file__).parent
+project_root = script_dir.parent
+scripts_path = project_root / "scripts"
+sys.path.insert(0, str(scripts_path))
 
 @dataclass
 class BenchmarkResult:
@@ -50,71 +46,51 @@ class BenchmarkRunner:
         self.logger = logging.getLogger(__name__)
         
     def run_traceguard(self) -> BenchmarkResult:
-        """Run TraceGuard analysis"""
+        """Run TraceGuard analysis using direct module import"""
         self.logger.info("Running TraceGuard analysis...")
         
-        start_time = time.time()
-        
         try:
-            # Construct TraceGuard command (adjust path based on current directory)
-            script_path = "scripts/taint_se.py"
-            if not os.path.exists(script_path):
-                script_path = "../scripts/taint_se.py"  # If running from benchmark directory
+            try:
+                from taint_se import TraceGuard
+            except ImportError as e:
+                self.logger.error(f"Failed to import TraceGuard: {e}")
+                sys.exit(1)
             
-            cmd = [
-                sys.executable,
-                script_path,
-                self.binary_path,
-                "--verbose"
-            ]
+            # Create TraceGuard instance with appropriate arguments
+            args = {
+                'verbose': False,
+                'debug': False,
+                'meta_file': None,
+                'show_libc_prints': False,
+                'show_syscall_prints': False
+            }
             
-            # Run TraceGuard
-            process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
+            # Run analysis
+            trace_guard = TraceGuard(binary_path=self.binary_path, args=args)
+            analysis_result = trace_guard.run_analysis()
             
-            stdout, stderr = process.communicate(timeout=self.timeout)
-            execution_time = time.time() - start_time
-            
-            # Parse TraceGuard output
-            result = self._parse_traceguard_output(stdout, stderr)
-            
+            # Convert AnalysisResult to BenchmarkResult
             return BenchmarkResult(
                 approach="TraceGuard",
-                success=process.returncode == 0,
-                execution_time=execution_time,
-                states_explored=result.get('states_explored', 0),
-                basic_blocks_covered=result.get('basic_blocks_covered', 0),
-                vulnerabilities_found=result.get('vulnerabilities_found', 0),
-                time_to_first_vuln=result.get('time_to_first_vuln'),
-                memory_usage_mb=result.get('memory_usage', 0),
-                error_message=stderr if process.returncode != 0 else None
+                success=analysis_result.success,
+                execution_time= analysis_result.analysis_time,
+                states_explored=analysis_result.states_explored,
+                basic_blocks_covered=analysis_result.basic_blocks_covered,
+                vulnerabilities_found=analysis_result.vulnerabilities_found,
+                time_to_first_vuln=analysis_result.time_to_first_vuln,
+                memory_usage_mb=analysis_result.memory_usage_mb,
+                error_message=analysis_result.error_message
             )
             
-        except subprocess.TimeoutExpired:
-            execution_time = time.time() - start_time
-            self.logger.warning(f"TraceGuard timed out after {self.timeout}s")
-            return BenchmarkResult(
-                approach="TraceGuard",
-                success=False,
-                execution_time=execution_time,
-                states_explored=0,
-                basic_blocks_covered=0,
-                vulnerabilities_found=0,
-                time_to_first_vuln=None,
-                memory_usage_mb=0,
-                error_message="Timeout"
-            )
         except Exception as e:
-            execution_time = time.time() - start_time
             self.logger.error(f"TraceGuard failed: {e}")
+            import traceback
+            traceback.print_exc()
+            
             return BenchmarkResult(
                 approach="TraceGuard",
                 success=False,
-                execution_time=execution_time,
+                execution_time=0,
                 states_explored=0,
                 basic_blocks_covered=0,
                 vulnerabilities_found=0,
@@ -127,85 +103,98 @@ class BenchmarkRunner:
         """Run classical Angr analysis"""
         self.logger.info("Running Classical Angr analysis...")
         
-        start_time = time.time()
-        
         try:
             # Load binary with Angr
             proj = angr.Project(self.binary_path, auto_load_libs=False)
             
-            # Create initial state
-            state = proj.factory.entry_state()
+            # Create initial state at main function
+            main_symbol = proj.loader.find_symbol("main")
+            if main_symbol:
+                main_addr = main_symbol.rebased_addr
+            else:
+                main_addr = proj.entry
+            
+            state = proj.factory.full_init_state(addr=main_addr)
             
             # Create simulation manager with default exploration
-            simgr = proj.factory.simulation_manager(state)
+            simgr = proj.factory.simulation_manager(state, save_unconstrained=True)
             
+            # Add exploration techniques for fair comparison
+            simgr.use_technique(angr.exploration_techniques.LengthLimiter(1000))
+            
+            # Build CFG for LoopSeer
+            try:
+                cfg = proj.analyses.CFGFast()
+                cfg.normalize()
+                simgr.use_technique(angr.exploration_techniques.LoopSeer(cfg=cfg))
+            except Exception as e:
+                self.logger.warning(f"Failed to build CFG for LoopSeer: {e}")
+            
+            simgr.use_technique(angr.exploration_techniques.DFS())
+
             # Track metrics
-            states_explored = 0
+            step_count = 0
             basic_blocks_covered = set()
             vulnerabilities_found = 0
             time_to_first_vuln = None
+            start_time = time.time()
             vuln_start_time = time.time()
             
             self.logger.info("Starting classical Angr exploration...")
             
-            # Run exploration with timeout
-            max_states = 1000  # Limit to prevent explosion
-            step_count = 0
+            # Run exploration with timeout and step limit
+            max_steps = 10000
             
-            while simgr.active and (time.time() - start_time) < self.timeout:
+            while (simgr.active and 
+                   (time.time() - start_time) < self.timeout and 
+                   step_count < max_steps):
+                
                 # Step the simulation
                 simgr.step()
                 step_count += 1
                 
-                # Update metrics - ACCUMULATE states, don't overwrite
-                states_explored += len(simgr.active) + len(simgr.deadended) + len(simgr.errored) + len(simgr.unconstrained)
-                
-                # Track basic block coverage
-                for state in simgr.active + simgr.deadended:
-                    if hasattr(state, 'addr'):
+                # Track basic blocks covered
+                for state in simgr.active:
+                    if state.addr:
                         basic_blocks_covered.add(state.addr)
                 
-                # Check for vulnerabilities in errored states
-                for errored_state in simgr.errored:
-                    if self._is_vulnerability(errored_state):
-                        vulnerabilities_found += 1
-                        if time_to_first_vuln is None:
+                # Check for vulnerabilities
+                new_vulnerabilities = 0
+                
+                # Check unconstrained states (potential buffer overflows)
+                if simgr.unconstrained:
+                    new_vuln_count = len(simgr.unconstrained)
+                    if new_vuln_count > 0:
+                        if vulnerabilities_found == 0:
                             time_to_first_vuln = time.time() - vuln_start_time
-                        self.logger.info(f"Found vulnerability in errored state: {errored_state.error}")
+                        new_vulnerabilities += new_vuln_count
+                        self.logger.info(f"Found {new_vuln_count} unconstrained states")
+                        # Move to avoid re-counting
+                        simgr.move(from_stash='unconstrained', to_stash='found')
                 
-                # ALSO check unconstrained states - these often indicate vulnerabilities
-                for unconstrained_state in simgr.unconstrained:
-                    # Unconstrained states often indicate buffer overflows or similar issues
-                    vulnerabilities_found += 1
-                    if time_to_first_vuln is None:
-                        time_to_first_vuln = time.time() - vuln_start_time
-                    self.logger.info(f"Found potential vulnerability: unconstrained state at {unconstrained_state.addr:#x}")
-                
-                # Check for deadended states that might indicate crashes
-                for deadended_state in simgr.deadended:
-                    # Some vulnerabilities cause states to deadend at unusual locations
-                    if hasattr(deadended_state, 'addr'):
-                        addr = deadended_state.addr
-                        # Check if deadended in library functions that might indicate overflow
-                        if any(lib_func in str(addr) for lib_func in ['strcpy', 'printf', 'sprintf', 'strcat']):
-                            vulnerabilities_found += 1
-                            if time_to_first_vuln is None:
+                # Check errored states for potential vulnerabilities
+                if simgr.errored:
+                    for error_record in simgr.errored:
+                        error_str = str(error_record.error).lower()
+                        if any(vuln_indicator in error_str for vuln_indicator in [
+                            "segmentation fault", "segfault", "buffer overflow", 
+                            "stack overflow", "heap overflow", "access violation",
+                            "memory error", "sigsegv"
+                        ]):
+                            if vulnerabilities_found == 0 and new_vulnerabilities == 0:
                                 time_to_first_vuln = time.time() - vuln_start_time
-                            self.logger.info(f"Found potential vulnerability: deadended in library function at {addr:#x}")
+                            new_vulnerabilities += 1
+                    
+                    # Clear errored states to avoid re-counting
+                    simgr.errored.clear()
                 
-                # Limit active states to prevent explosion
-                if len(simgr.active) > max_states:
-                    # Keep only the first max_states
-                    simgr.active = simgr.active[:max_states]
-                    self.logger.warning(f"Limited active states to {max_states}")
+                vulnerabilities_found += new_vulnerabilities
                 
                 # Log progress periodically
-                if step_count % 50 == 0:
+                if step_count % 100 == 0:
                     self.logger.info(f"Step {step_count}: {len(simgr.active)} active states, "
                                    f"{len(basic_blocks_covered)} blocks covered, "
-                                   f"{len(simgr.unconstrained)} unconstrained, "
-                                   f"{len(simgr.errored)} errored, "
-                                   f"total explored: {states_explored}")
+                                   f"{vulnerabilities_found} vulnerabilities found")
                 
                 # Break if no active states
                 if not simgr.active:
@@ -214,43 +203,42 @@ class BenchmarkRunner:
             
             execution_time = time.time() - start_time
             
-            # Final check for vulnerabilities in all stashes
-            for errored_state in simgr.errored:
-                if self._is_vulnerability(errored_state):
-                    vulnerabilities_found += 1
-                    if time_to_first_vuln is None:
-                        time_to_first_vuln = time.time() - vuln_start_time
+            # Calculate total states explored
+            total_states = (len(simgr.active) + len(simgr.deadended) + 
+                          len(simgr.errored) + len(simgr.unconstrained) +
+                          len(simgr.found))
             
-            # Count unconstrained states as potential vulnerabilities
-            final_unconstrained = len(simgr.unconstrained)
-            if final_unconstrained > 0:
-                vulnerabilities_found += final_unconstrained
-                if time_to_first_vuln is None:
-                    time_to_first_vuln = time.time() - vuln_start_time
-                self.logger.info(f"Found {final_unconstrained} unconstrained states (potential vulnerabilities)")
+            self.logger.info(f"Classical Angr completed in {execution_time:.2f}s")
+            self.logger.info(f"Steps taken: {step_count}")
+            self.logger.info(f"Total states: {total_states}")
+            self.logger.info(f"Basic blocks covered: {len(basic_blocks_covered)}")
+            self.logger.info(f"Vulnerabilities found: {vulnerabilities_found}")
             
-            self.logger.info(f"Classical Angr completed: {states_explored} states, "
-                           f"{len(basic_blocks_covered)} blocks, {vulnerabilities_found} vulns, "
-                           f"{final_unconstrained} unconstrained")
+            # Check for timeout
+            if (time.time() - start_time) >= self.timeout:
+                self.logger.warning("Classical Angr analysis timed out")
             
             return BenchmarkResult(
                 approach="Classical Angr",
                 success=True,
                 execution_time=execution_time,
-                states_explored=states_explored,
+                states_explored=total_states,
                 basic_blocks_covered=len(basic_blocks_covered),
                 vulnerabilities_found=vulnerabilities_found,
                 time_to_first_vuln=time_to_first_vuln,
-                memory_usage_mb=self._get_memory_usage()
+                memory_usage_mb=0,  # Could implement memory tracking if needed
+                error_message=None
             )
             
         except Exception as e:
-            execution_time = time.time() - start_time
             self.logger.error(f"Classical Angr failed: {e}")
+            import traceback
+            traceback.print_exc()
+            
             return BenchmarkResult(
                 approach="Classical Angr",
                 success=False,
-                execution_time=execution_time,
+                execution_time=0,
                 states_explored=0,
                 basic_blocks_covered=0,
                 vulnerabilities_found=0,
@@ -259,8 +247,27 @@ class BenchmarkRunner:
                 error_message=str(e)
             )
     
+    def run_comparison(self) -> Dict[str, BenchmarkResult]:
+        """Run comparison between TraceGuard and Classical Angr"""
+        self.logger.info(f"Starting benchmark comparison for {self.binary_path}")
+        
+        results = {}
+        
+        # Run TraceGuard
+        traceguard_result = self.run_traceguard()
+        results['traceguard'] = traceguard_result
+        
+        # Run Classical Angr
+        classical_result = self.run_classical_angr()
+        results['classical'] = classical_result
+        
+        # Generate comparison report
+        self._generate_report(results)
+        
+        return results
+    
     def _parse_traceguard_output(self, stdout: str, stderr: str) -> Dict[str, Any]:
-        """Parse TraceGuard output to extract metrics from the structured analysis results"""
+        """Parse TraceGuard output to extract metrics (fallback method)"""
         result = {
             'states_explored': 0,
             'basic_blocks_covered': 0,
@@ -290,8 +297,7 @@ class BenchmarkRunner:
             
             # Parse structured analysis results
             if in_analysis_results:
-                if 'functions analyzed:' in line_lower:
-                    # Extract total functions as proxy for basic blocks
+                if 'functions discovered:' in line_lower or 'functions analyzed:' in line_lower:
                     try:
                         parts = line_stripped.split(':')
                         if len(parts) > 1:
@@ -301,8 +307,7 @@ class BenchmarkRunner:
                     except (ValueError, IndexError):
                         pass
                         
-                elif 'tainted functions:' in line_lower:
-                    # Extract tainted function count
+                elif 'vulnerabilities found:' in line_lower:
                     try:
                         parts = line_stripped.split(':')
                         if len(parts) > 1:
@@ -312,143 +317,27 @@ class BenchmarkRunner:
                     except (ValueError, IndexError):
                         pass
                         
-                elif 'taint propagation paths:' in line_lower:
-                    # Extract propagation path count as additional vulnerability indicator
+                elif 'states explored:' in line_lower or 'total states:' in line_lower:
                     try:
                         parts = line_stripped.split(':')
                         if len(parts) > 1:
                             nums = [int(x) for x in parts[1].split() if x.isdigit()]
                             if nums:
-                                result['vulnerabilities_found'] += nums[0]
+                                result['states_explored'] = nums[0]
                     except (ValueError, IndexError):
                         pass
             
-            # Parse simulation manager results
-            elif 'states are still active' in line_lower:
+            # Look for time information
+            if 'time to first vulnerability:' in line_lower:
                 try:
-                    words = line_stripped.split()
-                    for word in words:
-                        if word.isdigit():
-                            result['states_explored'] += int(word)
-                            break
-                except (ValueError, IndexError):
+                    import re
+                    time_match = re.search(r'(\d+\.?\d*)\s*(?:seconds?|s)', line_lower)
+                    if time_match:
+                        result['time_to_first_vuln'] = float(time_match.group(1))
+                except (ValueError, AttributeError):
                     pass
-                    
-            elif 'states reached a dead end' in line_lower:
-                try:
-                    words = line_stripped.split()
-                    for word in words:
-                        if word.isdigit():
-                            result['states_explored'] += int(word)
-                            break
-                except (ValueError, IndexError):
-                    pass
-                    
-            elif 'states encountered errors' in line_lower:
-                try:
-                    words = line_stripped.split()
-                    for word in words:
-                        if word.isdigit():
-                            result['states_explored'] += int(word)
-                            # Error states often indicate vulnerabilities
-                            result['vulnerabilities_found'] += int(word)
-                            break
-                except (ValueError, IndexError):
-                    pass
-                    
-            elif 'states are unconstrained' in line_lower:
-                try:
-                    words = line_stripped.split()
-                    for word in words:
-                        if word.isdigit():
-                            result['states_explored'] += int(word)
-                            # Unconstrained states are potential vulnerabilities
-                            result['vulnerabilities_found'] += int(word)
-                            break
-                except (ValueError, IndexError):
-                    pass
-            
-            # Look for specific taint detection messages
-            elif 'taint_source:' in line_lower or 'input function' in line_lower:
-                result['vulnerabilities_found'] += 1
-                
-            elif 'taint_arg:' in line_lower and 'tainted' in line_lower:
-                # Tainted argument indicates vulnerability potential
-                result['vulnerabilities_found'] += 1
-            
-            # Count unique function hooks as exploration activity
-            elif 'hook #' in line_lower and 'called:' in line_lower:
-                result['states_explored'] += 1
-        
-        # Ensure minimum values
-        if result['states_explored'] == 0:
-            # If no explicit states found, estimate from hook calls
-            hook_count = output.lower().count('hook #')
-            result['states_explored'] = max(1, hook_count)
-            
-        if result['basic_blocks_covered'] == 0:
-            # Estimate basic blocks from function calls
-            result['basic_blocks_covered'] = max(1, result['states_explored'])
         
         return result
-    
-    def _is_vulnerability(self, errored_state) -> bool:
-        """Check if an errored state represents a vulnerability"""
-        if not hasattr(errored_state, 'error'):
-            return False
-            
-        error_str = str(errored_state.error).lower()
-        
-        # Look for vulnerability indicators
-        vulnerability_indicators = [
-            'segmentation fault',
-            'segfault',
-            'buffer overflow',
-            'stack overflow',
-            'heap overflow',
-            'access violation',
-            'memory error',
-            'sigsegv',
-            'simmemorylimitexception',
-            'simstateerror',
-            'simcallstackpopexception'
-        ]
-        
-        # Also check for specific memory access patterns that might indicate overflow
-        is_vuln = any(indicator in error_str for indicator in vulnerability_indicators)
-        
-        if is_vuln:
-            self.logger.info(f"Detected potential vulnerability: {error_str}")
-            
-        return is_vuln
-    
-    def _get_memory_usage(self) -> float:
-        """Get current memory usage in MB"""
-        try:
-            import psutil
-            process = psutil.Process()
-            return process.memory_info().rss / 1024 / 1024
-        except ImportError:
-            return 0.0
-    
-    def run_comparison(self) -> Dict[str, BenchmarkResult]:
-        """Run both TraceGuard and Classical Angr and compare results"""
-        self.logger.info(f"Starting benchmark comparison for {self.binary_path}")
-        
-        results = {}
-        
-        # Run TraceGuard
-        traceguard_result = self.run_traceguard()
-        results['traceguard'] = traceguard_result
-        
-        # Run Classical Angr
-        classical_result = self.run_classical_angr()
-        results['classical'] = classical_result
-        
-        # Generate comparison report
-        self._generate_report(results)
-        
-        return results
     
     def _generate_report(self, results: Dict[str, BenchmarkResult]):
         """Generate comparison report"""
@@ -492,24 +381,47 @@ class BenchmarkRunner:
             if classical.execution_time > 0:
                 time_improvement = ((classical.execution_time - traceguard.execution_time) 
                                   / classical.execution_time * 100)
-                print(f"TraceGuard Time Improvement: {time_improvement:.1f}%")
+                print(f"TraceGuard Time Improvement: {time_improvement:+.1f}%")
             
             # State exploration efficiency
             if classical.states_explored > 0:
                 state_reduction = ((classical.states_explored - traceguard.states_explored) 
                                  / classical.states_explored * 100)
-                print(f"TraceGuard State Reduction: {state_reduction:.1f}%")
+                print(f"TraceGuard State Reduction: {state_reduction:+.1f}%")
             
             # Vulnerability detection
             print("Vulnerability Detection:")
             print(f"  TraceGuard: {traceguard.vulnerabilities_found}")
             print(f"  Classical:  {classical.vulnerabilities_found}")
             
+            if traceguard.vulnerabilities_found > classical.vulnerabilities_found:
+                print(f"  TraceGuard found {traceguard.vulnerabilities_found - classical.vulnerabilities_found} more vulnerabilities")
+            elif classical.vulnerabilities_found > traceguard.vulnerabilities_found:
+                print(f"  Classical found {classical.vulnerabilities_found - traceguard.vulnerabilities_found} more vulnerabilities")
+            else:
+                print("  Both approaches found the same number of vulnerabilities")
+            
             # Coverage comparison
             if classical.basic_blocks_covered > 0:
                 coverage_ratio = (traceguard.basic_blocks_covered / 
                                 classical.basic_blocks_covered * 100)
                 print(f"TraceGuard Coverage: {coverage_ratio:.1f}% of Classical")
+            
+            # Time to first vulnerability comparison
+            if traceguard.time_to_first_vuln and classical.time_to_first_vuln:
+                if traceguard.time_to_first_vuln < classical.time_to_first_vuln:
+                    speedup = classical.time_to_first_vuln / traceguard.time_to_first_vuln
+                    print(f"TraceGuard found first vulnerability {speedup:.1f}x faster")
+                else:
+                    slowdown = traceguard.time_to_first_vuln / classical.time_to_first_vuln
+                    print(f"Classical found first vulnerability {slowdown:.1f}x faster")
+        
+        elif traceguard.success and not classical.success:
+            print("TraceGuard succeeded while Classical Angr failed")
+        elif not traceguard.success and classical.success:
+            print("Classical Angr succeeded while TraceGuard failed")
+        else:
+            print("Both approaches failed")
         
         print("\n" + "="*60)
         
