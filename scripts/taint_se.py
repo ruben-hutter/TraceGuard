@@ -100,11 +100,10 @@ class AnalysisResult:
 
 class AnalysisSetupError(Exception):
     """Custom exception for errors during TaintAnalyzer setup."""
-
     pass
 
 
-class TaintAnalyzer:
+class TraceGuard:
     """
     A class to encapsulate the Angr project setup, taint analysis logic,
     and simulation management.
@@ -1076,9 +1075,8 @@ class TaintAnalyzer:
             )
 
 
-def run_analysis_from_args(binary_path: str, args: Dict[str, Any]) -> AnalysisResult:
+def run_taint_analysis(binary_path: str, args: Dict[str, Any]) -> AnalysisResult:
     """
-    Convenience function to run analysis with arguments.
     This is the main entry point for other modules.
 
     Args:
@@ -1089,8 +1087,8 @@ def run_analysis_from_args(binary_path: str, args: Dict[str, Any]) -> AnalysisRe
         AnalysisResult: Comprehensive analysis result
     """
     try:
-        analyzer = TaintAnalyzer(binary_path, args)
-        return analyzer.run_analysis()
+        trace_guard = TraceGuard(binary_path, args)
+        return trace_guard.run_analysis()
     except AnalysisSetupError as e:
         return AnalysisResult(
             success=False,
@@ -1156,7 +1154,7 @@ if __name__ == "__main__":
         )
         sys.exit(1)
 
-    result = run_analysis_from_args(args.binary_path, vars(args))
+    result = run_taint_analysis(args.binary_path, vars(args))
 
     if not result.success:
         my_logger.critical(f"Analysis failed: {result.error_message}")
