@@ -1,25 +1,28 @@
 import argparse
 import logging
 import sys
+import time
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import angr
 import claripy
 from angr.exploration_techniques import DFS
 from constants import (
-    INPUT_FUNCTION_NAMES,
-    COMMON_LIBC_FUNCTIONS,
-    DEBUG_LOG_FORMAT,
-    INFO_LOG_FORMAT,
-    DEFAULT_BUFFER_SIZE,
-    MAX_TAINT_SIZE_BYTES,
-    TAINT_SCORE_INPUT_FUNCTION,
-    TAINT_SCORE_TAINTED_CALL,
-    TAINT_SCORE_FUNCTION_CALL,
-    TAINT_SCORE_DECAY_FACTOR,
-    TAINT_SCORE_MINIMUM_TAINTED,
     AMD64_ARGUMENT_REGISTERS,
     AMD64_RETURN_REGISTER,
+    COMMON_LIBC_FUNCTIONS,
+    DEBUG_LOG_FORMAT,
+    DEFAULT_BUFFER_SIZE,
+    INFO_LOG_FORMAT,
+    INPUT_FUNCTION_NAMES,
+    MAX_TAINT_SIZE_BYTES,
+    TAINT_SCORE_DECAY_FACTOR,
+    TAINT_SCORE_FUNCTION_CALL,
+    TAINT_SCORE_INPUT_FUNCTION,
+    TAINT_SCORE_MINIMUM_TAINTED,
+    TAINT_SCORE_TAINTED_CALL,
     X86_ARGUMENT_REGISTERS,
     X86_RETURN_REGISTER,
 )
@@ -30,6 +33,69 @@ from visualize import generate_and_visualize_graph
 # Logging configuration
 logging.getLogger("angr").setLevel(logging.ERROR)
 my_logger = logging.getLogger(__name__)
+
+
+@dataclass
+class AnalysisResult:
+    """
+    Data class to hold all analysis results in a structured way.
+    This replaces the need for output parsing and makes the module properly importable.
+    """
+
+    # Basic execution info
+    success: bool
+    analysis_time: float
+
+    # Simulation states
+    active_states: int
+    deadended_states: int
+    errored_states: int
+    unconstrained_states: int
+
+    # Taint-specific metrics
+    functions_analyzed: int
+    functions_executed: int
+    functions_skipped: int
+    taint_sources_found: int
+    tainted_functions: List[str]
+    tainted_edges: List[tuple]
+
+    # Vulnerability metrics
+    vulnerabilities_found: int
+    time_to_first_vuln: Optional[float]
+    vulnerability_details: List[Dict[str, Any]]
+
+    # Coverage metrics
+    basic_blocks_covered: int
+    states_explored: int
+
+    # Additional metrics
+    memory_usage_mb: float
+    error_message: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for JSON serialization"""
+        return {
+            "success": self.success,
+            "analysis_time": self.analysis_time,
+            "active_states": self.active_states,
+            "deadended_states": self.deadended_states,
+            "errored_states": self.errored_states,
+            "unconstrained_states": self.unconstrained_states,
+            "functions_analyzed": self.functions_analyzed,
+            "functions_executed": self.functions_executed,
+            "functions_skipped": self.functions_skipped,
+            "taint_sources_found": self.taint_sources_found,
+            "tainted_functions": self.tainted_functions,
+            "tainted_edges": self.tainted_edges,
+            "vulnerabilities_found": self.vulnerabilities_found,
+            "time_to_first_vuln": self.time_to_first_vuln,
+            "vulnerability_details": self.vulnerability_details,
+            "basic_blocks_covered": self.basic_blocks_covered,
+            "states_explored": self.states_explored,
+            "memory_usage_mb": self.memory_usage_mb,
+            "error_message": self.error_message,
+        }
 
 
 class AnalysisSetupError(Exception):
@@ -74,14 +140,30 @@ class TaintAnalyzer:
         self.cfg = None
         self.taint_exploration = None
 
+        self.setup_start_time = None
+        self.execution_start_time = None
+        self.first_vuln_time = None
+
+        self.metrics = {
+            "functions_executed": 0,
+            "functions_skipped": 0,
+            "taint_sources_found": 0,
+            "vulnerabilities_found": 0,
+            "vulnerability_details": [],
+            "basic_blocks_covered": set(),
+            "states_explored": 0,
+        }
+
         self._configure_logging()
 
+        self.setup_start_time = time.time()
         self._load_project()
         self._initialize_project_taint_attributes()
         self._load_meta_file()
         self._configure_architecture_info()
         self._build_cfg_and_function_map()
         self._identify_main_function()
+        self.setup_time = time.time() - self.setup_start_time
 
     def _configure_logging(self):
         """Configures the logger based on verbose/debug arguments."""
@@ -128,10 +210,10 @@ class TaintAnalyzer:
         """
         Initializes custom attributes on the project for taint tracking.
         These attributes include:
-        - `project.tainted_functions`: A set of function names identified as processing tainted data.
-        - `project.tainted_memory_regions`: A dictionary mapping addresses to sizes of tainted memory regions.
-        - `project.tainted_edges`: A set of (caller, callee) tuples representing tainted call edges.
-        - `project.hook_call_id_counter`: A counter for unique hook call IDs.
+            - `project.tainted_functions`: A set of function names identified as processing tainted data.
+            - `project.tainted_memory_regions`: A dictionary mapping addresses to sizes of tainted memory regions.
+            - `project.tainted_edges`: A set of (caller, callee) tuples representing tainted call edges.
+            - `project.hook_call_id_counter`: A counter for unique hook call IDs.
         """
         self.project.tainted_functions = set()
         self.project.tainted_memory_regions = {}
@@ -251,7 +333,9 @@ class TaintAnalyzer:
 
         try:
             initial_state = self.project.factory.full_init_state(addr=self.main_addr)
-            self.simgr = self.project.factory.simulation_manager(initial_state, save_unconstrained=True)
+            self.simgr = self.project.factory.simulation_manager(
+                initial_state, save_unconstrained=True
+            )
 
             self.simgr.use_technique(angr.exploration_techniques.LengthLimiter(1000))
             if self.cfg:
@@ -395,6 +479,10 @@ class TaintAnalyzer:
         my_logger.info(
             f"TAINT_SOURCE: Input function {called_func_name} at {called_func_addr:#x} is introducing taint."
         )
+
+        self._track_taint_source()
+        self._track_function_execution(True)
+        self._track_basic_block(called_func_addr)
 
         self._update_state_taint_score(state, called_func_name, True)
 
@@ -586,6 +674,8 @@ class TaintAnalyzer:
         func_details = self.func_info_map.get(called_addr)
         called_name = func_details["name"] if func_details else f"sub_{called_addr:#x}"
 
+        self._track_basic_block(called_addr)
+
         caller_name, caller_func_address_str = self._get_caller_info(state, called_name)
 
         arguments_are_tainted = False
@@ -600,6 +690,8 @@ class TaintAnalyzer:
                 if self._check_arg_for_taint(state, arg_reg_name, called_name):
                     arguments_are_tainted = True
                     break
+
+        self._track_function_execution(arguments_are_tainted)
 
         taint_status_msg = " [TAINTED]" if arguments_are_tainted else ""
         if arguments_are_tainted:
@@ -639,11 +731,12 @@ class TaintAnalyzer:
                 )
         my_logger.info(f"Hooked {hooked_count} functions for taint analysis.")
 
-    def run_analysis(self):
+    def run_analysis(self) -> AnalysisResult:
         """
         Executes the symbolic analysis by hooking functions and running the simulation manager.
-        It also reports the simulation results and visualizes the call graph.
+        It also reports the simulation results.
         """
+        analysis_start_time = time.time()
         self._hook_functions()
 
         my_logger.info(
@@ -655,89 +748,295 @@ class TaintAnalyzer:
 
         try:
             self.simgr.run()
+            success = True
+            error_message = None
 
         except angr.errors.AngrTracerError as e:
             my_logger.warning(
                 f"AngrTracerError during simulation: {e}. Results may be partial."
             )
+            success = False
+            error_message = f"AngrTracerError: {e}"
         except Exception as e:
             my_logger.error(f"Unexpected error during simulation: {e}")
             import traceback
 
             traceback.print_exc()
+            success = False
+            error_message = f"Unexpected error: {e}"
+
+        analysis_time = time.time() - analysis_start_time
 
         my_logger.info("Simulation complete.")
-        self._report_simulation_results()
 
+        result = self._collect_analysis_result(
+            success=success,
+            analysis_time=analysis_time,
+            error_message=error_message,
+        )
+
+        self._log_analysis_result(result)
+
+        """
+        # TODO: Keep visualization option in main (taint_se just as cli tool)
         if self._is_server_running():
             self._visualize_graph()
+        """
+        return result
 
-    def _is_server_running(self):
-        """
-        Checks if the Schnauzer visualization server is running.
-        This is a placeholder function; actual implementation may vary.
-        """
+    def _is_vulnerability_state(self, error_record) -> bool:
+        """Check if an errored state represents a vulnerability"""
+        if not hasattr(error_record, "error"):
+            return False
+
+        error_str = str(error_record.error).lower()
+        vulnerability_indicators = [
+            "segmentation fault",
+            "segfault",
+            "buffer overflow",
+            "stack overflow",
+            "heap overflow",
+            "access violation",
+            "memory error",
+            "sigsegv",
+            "simmemorylimitexception",
+            "simstateerror",
+            "simcallstackpopexception",
+        ]
+
+        return any(indicator in error_str for indicator in vulnerability_indicators)
+
+    def _get_memory_usage(self) -> float:
+        """Get current memory usage in MB"""
         try:
-            # You can add actual server checking logic here later
-            # For now, return False to disable visualization
-            return False
-        except Exception:
-            return False
+            import psutil
 
-    def _report_simulation_results(self):
+            process = psutil.Process()
+            return process.memory_info().rss / 1024 / 1024
+        except ImportError:
+            return 0.0
+
+    def _track_vulnerability_discovery(self):
+        """Track when the first vulnerability is discovered"""
+        if self.first_vuln_time is None and self.execution_start_time:
+            self.first_vuln_time = time.time() - self.execution_start_time
+
+    def _track_function_execution(self, executed: bool):
+        """Track function execution for metrics"""
+        if executed:
+            self.metrics["functions_executed"] += 1
+        else:
+            self.metrics["functions_skipped"] += 1
+
+    def _track_taint_source(self):
+        """Track taint source discovery"""
+        self.metrics["taint_sources_found"] += 1
+
+    def _track_basic_block(self, address: int):
+        """Track basic block coverage"""
+        self.metrics["basic_blocks_covered"].add(address)
+
+    def _collect_analysis_result(
+        self,
+        success: bool,
+        analysis_time: float,
+        error_message: Optional[str] = None,
+    ) -> AnalysisResult:
         """
-        Reports the outcome of the symbolic simulation, including information about
-        deadended, active, and errored states.
-        If verbose mode is enabled, it also prints tainted call edges and functions
-        that processed tainted data.
+        Collect all analysis results into a structured AnalysisResult object.
         """
+        # Get state counts
+        active_states = len(self.simgr.active) if self.simgr else 0
+        deadended_states = len(self.simgr.deadended) if self.simgr else 0
+        errored_states = len(self.simgr.errored) if self.simgr else 0
+        unconstrained_states = len(self.simgr.unconstrained) if self.simgr else 0
+
+        # Calculate total states explored
+        total_states = (
+            active_states + deadended_states + errored_states + unconstrained_states
+        )
+
+        # Analyze vulnerabilities from simulation states
+        vulnerability_details = []
+        vulnerabilities_found = self.metrics["vulnerabilities_found"]
+
         if self.simgr:
-            if self.simgr.deadended:
-                """
-                my_logger.info(
-                    f"{len(self.simgr.deadended)} states reached a dead end."
-                )
-                """
-                pass
-            if self.simgr.active:
-                my_logger.info(f"{len(self.simgr.active)} states are still active.")
-            if self.simgr.errored:
-                my_logger.info(f"{len(self.simgr.errored)} states encountered errors.")
-                for i, error_record in enumerate(self.simgr.errored):
-                    my_logger.error(
-                        f"Error {i + 1}: State at {error_record.state.addr:#x} failed with: {error_record.error}"
-                    )
-            if self.simgr.unconstrained:
-                # TODO: Check if this is good
-                my_logger.info(
-                    f"{len(self.simgr.unconstrained)} states are unconstrained."
-                )
-                for i, unconstrained_state in enumerate(self.simgr.unconstrained):
-                    my_logger.info(
-                        f"Unconstrained State {i + 1}: {unconstrained_state}"
+            # Check errored states for vulnerabilities
+            for i, error_record in enumerate(self.simgr.errored):
+                if self._is_vulnerability_state(error_record):
+                    vulnerabilities_found += 1
+
+                    if vulnerabilities_found == 1:
+                        self._track_vulnerability_discovery()
+
+                    vulnerability_details.append(
+                        {
+                            "type": "errored_state",
+                            "address": error_record.state.addr,
+                            "error": str(error_record.error),
+                            "index": i,
+                        }
                     )
 
-        if self.taint_exploration:
-            self.taint_exploration.print_metrics()
+            # Check unconstrained states (potential vulnerabilities)
+            for i, unconstrained_state in enumerate(self.simgr.unconstrained):
+                vulnerabilities_found += 1
 
+                if vulnerabilities_found == 1:
+                    self._track_vulnerability_discovery()
+
+                address = None
+                try:
+                    possible_addrs = unconstrained_state.solver.eval_upto(unconstrained_state.regs._ip, 2)
+                    if len(possible_addrs) == 1:
+                        address = possible_addrs[0]
+                    elif len(possible_addrs) > 1:
+                        # TODO: Handle multiple possible addresses
+                        address = possible_addrs[0]  # Just take the first one
+                except Exception:
+                    # If we can't get any address, that's fine - leave it as None
+                    pass
+
+                vulnerability_details.append(
+                    {
+                        "type": "unconstrained_state",
+                        "address": address,
+                        "index": i,
+                    }
+                )
+
+        # Get taint-specific metrics
+        tainted_functions = (
+            list(self.project.tainted_functions)
+            if hasattr(self.project, "tainted_functions")
+            and self.project.tainted_functions
+            else []
+        )
+        tainted_edges = (
+            list(self.project.tainted_edges)
+            if hasattr(self.project, "tainted_edges") and self.project.tainted_edges
+            else []
+        )
+
+        # Get memory usage
+        memory_usage = self._get_memory_usage()
+
+        return AnalysisResult(
+            success=success,
+            analysis_time=analysis_time,
+            active_states=active_states,
+            deadended_states=deadended_states,
+            errored_states=errored_states,
+            unconstrained_states=unconstrained_states,
+            functions_analyzed=len(self.func_info_map),
+            functions_executed=self.metrics["functions_executed"],
+            functions_skipped=self.metrics["functions_skipped"],
+            taint_sources_found=self.metrics["taint_sources_found"],
+            tainted_functions=tainted_functions,
+            tainted_edges=tainted_edges,
+            vulnerabilities_found=vulnerabilities_found,
+            time_to_first_vuln=self.first_vuln_time,
+            vulnerability_details=vulnerability_details,
+            basic_blocks_covered=len(self.metrics["basic_blocks_covered"]),
+            states_explored=total_states,
+            memory_usage_mb=memory_usage,
+            error_message=error_message,
+        )
+
+    def _log_analysis_result(self, result: AnalysisResult):
+        """
+        Log analysis result in the traditional format for CLI usage.
+        """
         if self.args.get("verbose"):
-            if self.project and self.project.tainted_edges:
-                my_logger.info(
-                    "Tainted call edges (propagation of taint to arguments):"
-                )
-                for caller, callee in sorted(list(self.project.tainted_edges)):
-                    print(f"  {caller} -> {callee}")
-            else:
-                my_logger.info("No tainted call edges were recorded.")
-
             my_logger.info("Functions that processed/received tainted data:")
-            if self.project and self.project.tainted_functions:
-                for func_name in sorted(list(self.project.tainted_functions)):
+            if result.tainted_functions:
+                for func_name in sorted(result.tainted_functions):
                     print(f"  - {func_name}")
             else:
                 my_logger.info(
                     "No functions were identified as processing or receiving tainted data."
                 )
+
+            if result.tainted_edges:
+                my_logger.info(
+                    "Tainted call edges (propagation of taint to arguments):"
+                )
+                for caller, callee in sorted(result.tainted_edges):
+                    print(f"  {caller} -> {callee}")
+            else:
+                my_logger.info("No tainted call edges were recorded.")
+
+        my_logger.info("=== TAINT ANALYSIS RESULTS ===")
+
+        # Basic execution info
+        my_logger.info(f"Analysis successful: {result.success}")
+        my_logger.info(f"Analysis time: {result.analysis_time:.3f}s")
+
+        # State information
+        if result.active_states > 0:
+            my_logger.info(f"{result.active_states} states are still active.")
+        if result.deadended_states > 0:
+            my_logger.info(f"{result.deadended_states} states reached a dead end.")
+        if result.errored_states > 0:
+            my_logger.info(f"{result.errored_states} states encountered errors.")
+            for vuln in result.vulnerability_details:
+                if vuln["type"] == "errored_state":
+                    my_logger.error(
+                        f"Error {vuln['index'] + 1}: State at {vuln['address']:#x} failed with: {vuln['error']}"
+                    )
+        if result.unconstrained_states > 0:
+            my_logger.info(f"{result.unconstrained_states} states are unconstrained.")
+            for vuln in result.vulnerability_details:
+                if vuln["type"] == "unconstrained_state":
+                    addr_str = f" at {vuln['address']:#x}" if vuln["address"] else ""
+                    my_logger.info(f"Unconstrained State {vuln['index'] + 1}{addr_str}")
+
+        # Function execution analysis
+        total_discovered = result.functions_analyzed
+        total_called = result.functions_executed + result.functions_skipped
+        uncalled_functions = total_discovered - total_called
+
+        my_logger.info(f"Functions discovered: {total_discovered}")
+        my_logger.info(f"Functions called: {total_called} ({result.functions_executed} executed, {result.functions_skipped} skipped)")
+        if uncalled_functions > 0:
+            my_logger.info(f"Functions not reached: {uncalled_functions}")
+
+        # Vulnerabilities
+        if result.vulnerabilities_found > 0:
+            my_logger.info(f"Vulnerabilities found: {result.vulnerabilities_found}")
+            if result.time_to_first_vuln:
+                my_logger.info(
+                    f"Time to first vulnerability: {result.time_to_first_vuln:.3f}s"
+                )
+
+        # Taint-specific information
+        if self.taint_exploration:
+            metrics = self.taint_exploration.get_exploration_metrics()
+            
+            my_logger.info(f"Taint sources found: {result.taint_sources_found}")
+            my_logger.info(
+                f"Taint propagation paths: {metrics['taint_propagation_paths']}"
+            )
+
+            # Input sources
+            if metrics["input_sources_found"] > 0:
+                sources_str = ", ".join(metrics["input_source_names"])
+                my_logger.info(
+                    f"Input sources: {metrics['input_sources_found']} ({sources_str})"
+                )
+            else:
+                my_logger.info("Input sources: None detected")
+
+            # Security-relevant sinks
+            if metrics["critical_sinks_found"] > 0:
+                sinks_str = ", ".join(metrics["critical_sink_names"])
+                my_logger.info(
+                    f"Critical sinks: {metrics['critical_sinks_found']} ({sinks_str})"
+                )
+            else:
+                my_logger.info("Critical sinks: None detected")
+
+        my_logger.info("=== END ANALYSIS RESULTS ===")
 
     def _update_state_taint_score(self, state, called_name, is_tainted):
         """
@@ -763,6 +1062,7 @@ class TaintAnalyzer:
 
         state.globals["taint_score"] = max(current_score, 0.0)
 
+    # TODO: Check if not better to move this to scripts/main.py
     def _visualize_graph(self):
         """
         Generates and visualizes the call graph using the Schnauzer visualization client.
@@ -774,6 +1074,45 @@ class TaintAnalyzer:
             my_logger.warning(
                 "Cannot visualize graph: Project or function map not available."
             )
+
+
+def run_analysis_from_args(binary_path: str, args: Dict[str, Any]) -> AnalysisResult:
+    """
+    Convenience function to run analysis with arguments.
+    This is the main entry point for other modules.
+
+    Args:
+        binary_path: Path to the binary to analyze
+        args: Analysis arguments dictionary
+
+    Returns:
+        AnalysisResult: Comprehensive analysis result
+    """
+    try:
+        analyzer = TaintAnalyzer(binary_path, args)
+        return analyzer.run_analysis()
+    except AnalysisSetupError as e:
+        return AnalysisResult(
+            success=False,
+            analysis_time=0.0,
+            active_states=0,
+            deadended_states=0,
+            errored_states=0,
+            unconstrained_states=0,
+            functions_analyzed=0,
+            functions_executed=0,
+            functions_skipped=0,
+            taint_sources_found=0,
+            tainted_functions=[],
+            tainted_edges=[],
+            vulnerabilities_found=0,
+            time_to_first_vuln=None,
+            vulnerability_details=[],
+            basic_blocks_covered=0,
+            states_explored=0,
+            memory_usage_mb=0.0,
+            error_message=str(e),
+        )
 
 
 if __name__ == "__main__":
@@ -817,9 +1156,9 @@ if __name__ == "__main__":
         )
         sys.exit(1)
 
-    try:
-        analyzer = TaintAnalyzer(args.binary_path, vars(args))
-        analyzer.run_analysis()
-    except AnalysisSetupError as e:
-        my_logger.critical(f"Analysis setup failed: {e}")
+    result = run_analysis_from_args(args.binary_path, vars(args))
+
+    if not result.success:
+        my_logger.critical(f"Analysis failed: {result.error_message}")
         sys.exit(1)
+    sys.exit(0)

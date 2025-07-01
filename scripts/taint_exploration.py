@@ -1,5 +1,4 @@
 import logging
-import time
 from collections import defaultdict
 
 from angr.exploration_techniques import ExplorationTechnique
@@ -32,7 +31,6 @@ class TaintGuidedExploration(ExplorationTechnique):
         self.tainted_states_explored = 0
         self.untainted_states_explored = 0
         self.state_taint_history = defaultdict(list)
-        self.exploration_start_time = time.time()
 
         # State management
         self.state_scores = {}
@@ -170,8 +168,6 @@ class TaintGuidedExploration(ExplorationTechnique):
 
     def get_exploration_metrics(self):
         """Get meaningful analysis metrics for human interpretation."""
-        elapsed_time = time.time() - self.exploration_start_time
-
         # Function-level metrics (what humans care about)
         total_functions = len(self.project.kb.functions) if self.project else 0
         tainted_functions_count = (
@@ -194,62 +190,11 @@ class TaintGuidedExploration(ExplorationTechnique):
         ]
 
         return {
-            "elapsed_time": elapsed_time,
             "total_functions": total_functions,
             "tainted_functions_count": tainted_functions_count,
-            "tainted_function_ratio": tainted_functions_count / max(total_functions, 1),
             "taint_propagation_paths": tainted_edges_count,
             "input_sources_found": len(input_sources),
             "input_source_names": input_sources,
             "critical_sinks_found": len(critical_sinks),
             "critical_sink_names": critical_sinks,
         }
-
-    def print_metrics(self):
-        """Print human-meaningful analysis results."""
-        metrics = self.get_exploration_metrics()
-
-        self.logger.info("=" * 60)
-        self.logger.info("TAINT ANALYSIS RESULTS")
-        self.logger.info("=" * 60)
-        self.logger.info(f"Analysis Time: {metrics['elapsed_time']:.2f}s")
-        self.logger.info(f"Functions Analyzed: {metrics['total_functions']} total")
-        self.logger.info(
-            f"Tainted Functions: {metrics['tainted_functions_count']} ({metrics['tainted_function_ratio']:.1%})"
-        )
-        self.logger.info(
-            f"Taint Propagation Paths: {metrics['taint_propagation_paths']}"
-        )
-
-        # Input sources
-        if metrics["input_sources_found"] > 0:
-            sources_str = ", ".join(metrics["input_source_names"])
-            self.logger.info(
-                f"Input Sources: {metrics['input_sources_found']} ({sources_str})"
-            )
-        else:
-            self.logger.info("Input Sources: None detected")
-
-        # Security-relevant sinks
-        if metrics["critical_sinks_found"] > 0:
-            sinks_str = ", ".join(metrics["critical_sink_names"])
-            self.logger.info(
-                f"Critical Sinks: {metrics['critical_sinks_found']} ({sinks_str})"
-            )
-            self.logger.info("Review these functions for potential vulnerabilities")
-        else:
-            self.logger.info("Critical Sinks: None detected")
-
-        self.logger.info("=" * 60)
-
-        # Analysis quality assessment
-        if metrics["tainted_function_ratio"] > 0.3:
-            self.logger.info(
-                "High taint coverage: Comprehensive input processing detected"
-            )
-        elif metrics["tainted_function_ratio"] > 0.1:
-            self.logger.info("Moderate taint coverage: Some input processing detected")
-        else:
-            self.logger.info(
-                "Low taint coverage: Limited input processing or detection issues"
-            )
