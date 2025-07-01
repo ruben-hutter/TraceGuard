@@ -776,14 +776,52 @@ class TraceGuard:
 
         self._log_analysis_result(result)
 
-        """
-        # TODO: Keep visualization option in main (taint_se just as cli tool)
         if self._is_server_running():
             self._visualize_graph()
-        """
+
         return result
 
-    def _is_vulnerability_state(self, error_record) -> bool:
+    def _is_server_running(self):
+        """
+        Check if Schnauzer server is running on the default address and port.
+        
+        Returns:
+            bool: True if server is accessible, False otherwise
+        """
+        import socket
+        import urllib.request
+        import urllib.error
+        
+        # Default Schnauzer server configuration
+        server_host = "127.0.0.1"
+        server_port = 8080
+        server_url = f"http://{server_host}:{server_port}"
+        
+        try:
+            # First, try a simple socket connection to check if port is open
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.settimeout(1.0)  # 1 second timeout
+                result = sock.connect_ex((server_host, server_port))
+                if result != 0:
+                    return False
+            
+            # If port is open, try an HTTP request to verify it's actually Schnauzer
+            try:
+                with urllib.request.urlopen(server_url, timeout=2.0) as response:
+                    # If we get any HTTP response, assume the server is running
+                    return response.getcode() < 500
+            except urllib.error.HTTPError as e:
+                # Even HTTP errors (like 404) indicate a server is running
+                return e.code < 500
+            except urllib.error.URLError:
+                # URL errors typically mean connection issues
+                return False
+                
+        except (socket.error, OSError, Exception) as e:
+            my_logger.debug(f"Server check failed: {e}")
+            return False
+
+    def _is_vulnerability_state(self, error_record):
         """Check if an errored state represents a vulnerability"""
         if not hasattr(error_record, "error"):
             return False
@@ -805,7 +843,7 @@ class TraceGuard:
 
         return any(indicator in error_str for indicator in vulnerability_indicators)
 
-    def _get_memory_usage(self) -> float:
+    def _get_memory_usage(self):
         """Get current memory usage in MB"""
         try:
             import psutil
@@ -1061,7 +1099,6 @@ class TraceGuard:
 
         state.globals["taint_score"] = max(current_score, 0.0)
 
-    # TODO: Check if not better to move this to scripts/main.py
     def _visualize_graph(self):
         """
         Generates and visualizes the call graph using the Schnauzer visualization client.
@@ -1073,44 +1110,6 @@ class TraceGuard:
             my_logger.warning(
                 "Cannot visualize graph: Project or function map not available."
             )
-
-
-def run_taint_analysis(binary_path: str, args: Dict[str, Any]) -> AnalysisResult:
-    """
-    This is the main entry point for other modules.
-
-    Args:
-        binary_path: Path to the binary to analyze
-        args: Analysis arguments dictionary
-
-    Returns:
-        AnalysisResult: Comprehensive analysis result
-    """
-    try:
-        trace_guard = TraceGuard(binary_path, args)
-        return trace_guard.run_analysis()
-    except AnalysisSetupError as e:
-        return AnalysisResult(
-            success=False,
-            analysis_time=0.0,
-            active_states=0,
-            deadended_states=0,
-            errored_states=0,
-            unconstrained_states=0,
-            functions_analyzed=0,
-            functions_executed=0,
-            functions_skipped=0,
-            taint_sources_found=0,
-            tainted_functions=[],
-            tainted_edges=[],
-            vulnerabilities_found=0,
-            time_to_first_vuln=None,
-            vulnerability_details=[],
-            basic_blocks_covered=0,
-            states_explored=0,
-            memory_usage_mb=0.0,
-            error_message=str(e),
-        )
 
 
 if __name__ == "__main__":
@@ -1154,7 +1153,8 @@ if __name__ == "__main__":
         )
         sys.exit(1)
 
-    result = run_taint_analysis(args.binary_path, vars(args))
+    trace_guard = TraceGuard(binary_path=args.binary_path, args=vars(args))
+    result = trace_guard.run_analysis()
 
     if not result.success:
         my_logger.critical(f"Analysis failed: {result.error_message}")
