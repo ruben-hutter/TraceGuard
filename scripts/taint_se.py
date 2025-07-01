@@ -139,10 +139,8 @@ class TraceGuard:
         self.cfg = None
         self.taint_exploration = None
 
-        self.setup_start_time = None
-        self.execution_start_time = None
+        # TODO: move inside metrics??
         self.first_vuln_time = None
-
         self.metrics = {
             "functions_executed": 0,
             "functions_skipped": 0,
@@ -155,14 +153,12 @@ class TraceGuard:
 
         self._configure_logging()
 
-        self.setup_start_time = time.time()
         self._load_project()
         self._initialize_project_taint_attributes()
         self._load_meta_file()
         self._configure_architecture_info()
         self._build_cfg_and_function_map()
         self._identify_main_function()
-        self.setup_time = time.time() - self.setup_start_time
 
     def _configure_logging(self):
         """Configures the logger based on verbose/debug arguments."""
@@ -745,8 +741,45 @@ class TraceGuard:
             f"Starting simulation with {len(self.simgr.active)} initial state(s)."
         )
 
+        
         try:
-            self.simgr.run()
+            step_count = 0
+            max_steps = 10000
+            first_vuln_found = False
+            
+            while self.simgr.active and step_count < max_steps:
+                self.simgr.step()
+                step_count += 1
+                
+                # Check for first vulnerability
+                if not first_vuln_found:
+                    new_vulnerabilities = 0
+                    
+                    # Check unconstrained states
+                    if self.simgr.unconstrained:
+                        new_vulnerabilities += len(self.simgr.unconstrained)
+                    
+                    # Check errored states for vulnerabilities
+                    if self.simgr.errored:
+                        for error_record in self.simgr.errored:
+                            if self._is_vulnerability_state(error_record):
+                                new_vulnerabilities += 1
+                    
+                    # Record time to first vulnerability
+                    if new_vulnerabilities > 0:
+                        self.first_vuln_time = time.time() - analysis_start_time
+                        first_vuln_found = True
+                        my_logger.info(f"First vulnerability found at {self.first_vuln_time:.3f}s")
+                
+                # Optional: Log progress every 100 steps
+                if step_count % 100 == 0:
+                    my_logger.debug(f"Step {step_count}: {len(self.simgr.active)} active states")
+            
+            # Log completion info
+            if step_count >= max_steps:
+                my_logger.warning(f"Reached maximum step limit ({max_steps})")
+            
+            my_logger.info(f"Simulation completed after {step_count} steps")
             success = True
             error_message = None
 
@@ -853,11 +886,6 @@ class TraceGuard:
         except ImportError:
             return 0.0
 
-    def _track_vulnerability_discovery(self):
-        """Track when the first vulnerability is discovered"""
-        if self.first_vuln_time is None and self.execution_start_time:
-            self.first_vuln_time = time.time() - self.execution_start_time
-
     def _track_function_execution(self, executed: bool):
         """Track function execution for metrics"""
         if executed:
@@ -903,9 +931,6 @@ class TraceGuard:
                 if self._is_vulnerability_state(error_record):
                     vulnerabilities_found += 1
 
-                    if vulnerabilities_found == 1:
-                        self._track_vulnerability_discovery()
-
                     vulnerability_details.append(
                         {
                             "type": "errored_state",
@@ -918,9 +943,6 @@ class TraceGuard:
             # Check unconstrained states (potential vulnerabilities)
             for i, unconstrained_state in enumerate(self.simgr.unconstrained):
                 vulnerabilities_found += 1
-
-                if vulnerabilities_found == 1:
-                    self._track_vulnerability_discovery()
 
                 address = None
                 try:
@@ -1159,4 +1181,5 @@ if __name__ == "__main__":
     if not result.success:
         my_logger.critical(f"Analysis failed: {result.error_message}")
         sys.exit(1)
+
     sys.exit(0)
