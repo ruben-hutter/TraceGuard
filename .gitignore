@@ -3,6 +3,21 @@ examples/*
 !examples/*.c
 !examples/*.meta
 
+# Benchmark results and evaluation data
+benchmark/evaluation_results/
+benchmark/results/
+benchmark/.venv/
+benchmark/__pycache__/
+
+# Test binaries (if you don't want to version them)
+benchmark/test_programs/*
+!benchmark/test_programs/*.c
+!benchmark/test_programs/*.meta
+
+# Any other benchmark artifacts
+*.png
+*.json
+
 # Created by https://www.toptal.com/developers/gitignore/api/assembler,c,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=assembler,c,python
 
