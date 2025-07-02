@@ -1,5 +1,6 @@
 % !TEX root = ../Thesis.tex
 \chapter{Implementation}
+\label{ch:implementation}
 
 This chapter presents the practical implementation of the taint-guided symbolic execution approach described in Chapter~\ref{ch:taint_guided_exploration}. TraceGuard is built using Python and integrates with the Angr binary analysis framework to provide taint-aware symbolic execution capabilities. TraceGuard demonstrates how dynamic taint analysis can be effectively integrated with symbolic execution to achieve security-focused path prioritization, directly implementing the theoretical algorithms presented in the previous chapter.
 
@@ -209,6 +210,8 @@ The tool supports several command-line options for customizing analysis behavior
 
 The \texttt{trace\_guard.py} entry point includes integration with the Schnauzer visualization framework, enabling interactive exploration of analysis results through graphical representations of call graphs, taint flow patterns, and execution paths.
 
+\pagebreak
+
 \subsection{Usage Examples}
 
 \textbf{Basic Analysis:}
@@ -246,16 +249,36 @@ The tool integrates into existing analysis workflows through a straightforward e
 
 The analysis process provides comprehensive feedback on function execution patterns, taint flow detection, and exploration effectiveness.
 
-\section{Practical Demonstration}\label{sec:practical_demonstration}
+\section{Practical Example}
 
-\subsection{Example Program Analysis}
-% Description of the example program and its vulnerabilities
+To demonstrate TraceGuard's capabilities, we analyze the \texttt{test\_state\_explosion} program (Appendix~\ref{lst:state_explosion_test_program}) which contains both tainted and untainted execution paths, designed to evaluate taint-guided exploration effectiveness.
 
-\subsection{TraceGuard Execution and Visualization}
-% Step-by-step walkthrough of running TraceGuard
+\subsection{TraceGuard Execution}
 
-\subsection{Taint Flow Visualization}
-% Screenshots and explanation of the Schnauzer visualization
+Following the usage examples, TraceGuard is executed with visualization support:
 
-\subsection{Analysis Results Interpretation}
-% How to interpret the results and what they tell us about the program
+
+\begin{verbatim}
+python scripts/trace_guard.py \
+benchmark/test_programs/test_state_explosion
+\end{verbatim}
+
+The analysis workflow proceeds through binary loading, meta file detection, CFG construction (36 functions identified), and function hook installation. TraceGuard initiates symbolic execution from \texttt{main}, successfully detecting taint introduction through \texttt{fgets} and tracking propagation through multiple functions including \texttt{strcspn}, \texttt{strlen},\\
+\texttt{create\_many\_string\_states}, and \texttt{critical\_vulnerability}.
+
+\subsection{Analysis Results}
+
+TraceGuard completes analysis in 72.667 seconds, identifying 6 vulnerabilities (all buffer overflows in \texttt{critical\_vulnerability}) with the first detected in 14.396 seconds. The analysis discovers 6 unconstrained states, indicating successful exploration of paths leading to memory safety violations. Key taint propagation occurs through \texttt{strcpy} and \texttt{printf} functions, demonstrating effective security-focused path prioritization.
+
+\subsection{Interactive Visualization}
+
+TraceGuard provides web-based visualization at \texttt{http://127.0.0.1:8080} through Schnauzer integration:
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{Figures/test_state_explosion_visualization.png}
+    \caption{Interactive visualization of taint flow analysis showing function call graph with taint propagation patterns. Red nodes and edges indicate tainted functions and data flow; blue elements represent untainted program regions.}
+    \label{fig:test_state_explosion_visualization}
+\end{figure}
+
+Figure~\ref{fig:test_state_explosion_visualization} illustrates the call graph with clear distinction between security-relevant and irrelevant program regions. Red nodes represent functions processing tainted data, while red edges indicate tainted data flow between functions. Blue elements show untainted program regions that TraceGuard appropriately deprioritizes during exploration.
