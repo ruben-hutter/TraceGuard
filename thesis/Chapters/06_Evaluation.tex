@@ -133,6 +133,8 @@ test\_state\_explosion & 13.0 $\pm$ 0.0 & 35.3 $\pm$ 0.5 & 36.8\% \\
 
 \textbf{Quality over Quantity:} The coverage analysis reveals that TraceGuard's reduced exploration is not a limitation but rather a strategic advantage. In the most challenging scenario (\texttt{test\_state\_explosion}), TraceGuard explores only 36.8\% of the basic blocks covered by classical execution yet finds $5 \times$ more vulnerabilities, demonstrating the effectiveness of focused, security-oriented exploration.
 
+This consistent performance across programs with varying complexity---from simple linear programs to complex recursive and multi-function scenarios---directly addresses RQ4 (Section~\ref{subsec:research_questions}) by demonstrating that the taint-guided approach scales effectively across diverse program characteristics and control flow patterns.
+
 \subsection{Statistical Significance and Reliability}
 
 All performance measurements demonstrate high statistical reliability with acceptable variance across multiple execution runs. The 100\% success rate across all 70 execution runs confirms the stability and robustness of the TraceGuard implementation. Standard deviations in execution times remain within reasonable bounds, indicating consistent performance characteristics suitable for practical deployment.

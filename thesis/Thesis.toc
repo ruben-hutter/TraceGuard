@@ -55,7 +55,7 @@
 \contentsline {subsection}{\numberline {6.3.1}Vulnerability Detection Effectiveness}{24}{subsection.86}%
 \contentsline {subsection}{\numberline {6.3.2}Execution Time Performance}{24}{subsection.88}%
 \contentsline {subsection}{\numberline {6.3.3}Coverage Analysis and Path Efficiency}{25}{subsection.90}%
-\contentsline {subsection}{\numberline {6.3.4}Statistical Significance and Reliability}{25}{subsection.92}%
+\contentsline {subsection}{\numberline {6.3.4}Statistical Significance and Reliability}{26}{subsection.92}%
 \contentsline {section}{\numberline {6.4}Discussion and Analysis}{26}{section.93}%
 \contentsline {subsection}{\numberline {6.4.1}Limitations and Practical Considerations}{26}{subsection.94}%
 \contentsline {chapter}{\chapternumberline {7}Conclusion}{27}{chapter.95}%
