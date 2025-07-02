@@ -12,14 +12,13 @@ class TaintGuidedExploration(ExplorationTechnique):
     to guide symbolic execution toward paths that interact with tainted data.
     """
 
-    def __init__(self, logger=None, project=None, max_priority_states=20):
+    def __init__(self, logger=None, project=None, max_priority_states=15):
         """
         Initialize the taint-guided exploration technique.
 
         Args:
             logger: Logger instance for debugging
             project: Angr project instance (to access taint tracking data)
-            priority_weight (float): Multiplier for tainted state priorities
             max_priority_states (int): Maximum number of high-priority states to maintain
         """
         super().__init__()
@@ -55,10 +54,38 @@ class TaintGuidedExploration(ExplorationTechnique):
         if stash not in simgr.stashes or not simgr.stashes[stash]:
             return
 
-        states = simgr.stashes[stash]
-        scored_states = []
+        # Initialize reserve stashes if they don't exist
+        if "tainted_high_priority" not in simgr.stashes:
+            simgr.stashes["tainted_high_priority"] = []
+        if "tainted_medium_priority" not in simgr.stashes:
+            simgr.stashes["tainted_medium_priority"] = []
 
-        # Score each state based on taint relevance
+        # Get current active states
+        states = simgr.stashes[stash]
+        
+        # Add back states from reserves if we have room
+        if len(states) < self.max_priority_states:
+            available_slots = self.max_priority_states - len(states)
+            
+            # First recover high-priority states
+            if simgr.stashes["tainted_high_priority"] and available_slots > 0:
+                to_recover = min(available_slots, len(simgr.stashes["tainted_high_priority"]))
+                recovered = simgr.stashes["tainted_high_priority"][:to_recover]
+                simgr.stashes["tainted_high_priority"] = simgr.stashes["tainted_high_priority"][to_recover:]
+                states.extend(recovered)
+                available_slots -= to_recover
+                self.logger.debug(f"Recovered {to_recover} high-priority states")
+            
+            # Then recover medium-priority states if still have room
+            if simgr.stashes["tainted_medium_priority"] and available_slots > 0:
+                to_recover = min(available_slots, len(simgr.stashes["tainted_medium_priority"]))
+                recovered = simgr.stashes["tainted_medium_priority"][:to_recover]
+                simgr.stashes["tainted_medium_priority"] = simgr.stashes["tainted_medium_priority"][to_recover:]
+                states.extend(recovered)
+                self.logger.debug(f"Recovered {to_recover} medium-priority states")
+
+        # Score and classify all states (active + recovered)
+        scored_states = []
         for state in states:
             score = self._calculate_taint_score(state)
             scored_states.append((score, state))
@@ -81,14 +108,27 @@ class TaintGuidedExploration(ExplorationTechnique):
                 normal_priority.append(state)
 
         prioritized_states = high_priority + medium_priority + normal_priority
-        simgr.stashes[stash] = prioritized_states
 
-        if len(prioritized_states) > 15:
-            simgr.stashes[stash] = prioritized_states[:15]
-            simgr.stashes["tainted_high_priority"].extend(
-                high_priority[5:] if len(high_priority) > 5 else []
-            )
-            simgr.stashes["tainted_medium_priority"].extend(prioritized_states[15:])
+        # Manage state overflow using the parameter
+        if len(prioritized_states) > self.max_priority_states:
+            # Keep the top states active
+            active_states = prioritized_states[:self.max_priority_states]
+            overflow_states = prioritized_states[self.max_priority_states:]
+            
+            simgr.stashes[stash] = active_states
+            
+            # Store overflow states in appropriate reserves
+            for state in overflow_states:
+                score = self._calculate_taint_score(state)
+                if score >= 6.0:
+                    simgr.stashes["tainted_high_priority"].append(state)
+                else:
+                    simgr.stashes["tainted_medium_priority"].append(state)
+            
+            self.logger.debug(f"Moved {len(overflow_states)} states to reserves")
+        else:
+            # All states fit in active exploration
+            simgr.stashes[stash] = prioritized_states
 
     def _calculate_taint_score(self, state):
         """

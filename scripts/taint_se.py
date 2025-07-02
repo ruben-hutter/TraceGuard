@@ -21,6 +21,7 @@ from constants import (
     TAINT_SCORE_DECAY_FACTOR,
     TAINT_SCORE_FUNCTION_CALL,
     TAINT_SCORE_INPUT_FUNCTION,
+    TAINT_SCORE_INPUT_HOOK_BONUS,
     TAINT_SCORE_MINIMUM_TAINTED,
     TAINT_SCORE_TAINTED_CALL,
     X86_ARGUMENT_REGISTERS,
@@ -337,7 +338,7 @@ class TraceGuard:
                 initial_state, save_unconstrained=True
             )
 
-            self.simgr.use_technique(angr.exploration_techniques.LengthLimiter(100))
+            self.simgr.use_technique(angr.exploration_techniques.LengthLimiter(1000))
             if self.cfg:
                 self.simgr.use_technique(
                     angr.exploration_techniques.LoopSeer(cfg=self.cfg)
@@ -360,49 +361,27 @@ class TraceGuard:
             ) from e
 
     def _is_value_tainted(self, state, value):
-        """
-        Check if a value is tainted by looking for symbolic variables or
-        checking if it points to a known tainted memory region.
-
-        Args:
-            state (angr.sim_state.SimState): The current simulation state.
-            value (claripy.ast.Base): The value to check for taint.
-
-        Returns:
-            bool: True if the value is tainted, False otherwise.
-        """
+        """More aggressive taint detection"""
         if not hasattr(value, "symbolic") or not value.symbolic:
             return False
 
+        # Check for ANY symbolic variables - be much more permissive
         if hasattr(value, "variables"):
             for var_name in value.variables:
-                if var_name.startswith("taint_source_"):
+                var_str = str(var_name)
+                # Any of these patterns = tainted
+                if any(pattern in var_str for pattern in [
+                    "taint_source_", "stdin", "symbolic", "unconstrained", "input"
+                ]):
                     return True
 
+        # Check string representation
         value_str = str(value)
-        if "taint_source_" in value_str:
+        if any(pattern in value_str for pattern in [
+            "taint_source_", "stdin", "symbolic", "unconstrained"
+        ]):
             return True
 
-        if not value.symbolic:
-            try:
-                addr = state.solver.eval_one(value)
-                for (
-                    region_addr,
-                    region_size,
-                ) in self.project.tainted_memory_regions.items():
-                    if region_addr <= addr < region_addr + region_size:
-                        my_logger.debug(
-                            f"Taint check: Value {addr:#x} points into known tainted region {region_addr:#x} (size {region_size})."
-                        )
-                        return True
-            except angr.errors.SimSolverError:
-                my_logger.debug(
-                    f"SimSolverError while checking if value {value} points to tainted memory. Assuming not tainted for this check."
-                )
-            except Exception as e:
-                my_logger.debug(
-                    f"Exception while checking if value {value} points to tainted memory: {e}. Assuming not tainted."
-                )
         return False
 
     def _taint_fgets_buffer(self, state, called_func_name):
@@ -515,7 +494,7 @@ class TraceGuard:
         self._update_state_taint_score(state, called_func_name, True)
 
         current_score = state.globals.get("taint_score", 0)
-        state.globals["taint_score"] = current_score + 5.0
+        state.globals["taint_score"] = current_score + TAINT_SCORE_INPUT_HOOK_BONUS
 
         if called_func_name == "fgets":
             self._taint_fgets_buffer(state, called_func_name)
@@ -782,31 +761,27 @@ class TraceGuard:
         )
 
         try:
-            step_count = 0
-            max_steps = 1000
+            # Track first vulnerability timing
             first_vuln_found = False
-
-            while self.simgr.active and step_count < max_steps:
-                if timeout and time.time() - analysis_start_time > timeout:
-                    my_logger.warning(
-                            f"TIMEOUT: Stopping analysis after {timeout}s"
-                    )
-                    break
-
-                self.simgr.step()
-                step_count += 1
-
-                # Check for first vulnerability
+            
+            # Create a custom step function to track vulnerabilities
+            def step_with_vuln_check(simgr):
+                nonlocal first_vuln_found
+                
+                # Perform the actual step
+                simgr.step()
+                
+                # Check for first vulnerability after each step
                 if not first_vuln_found:
                     new_vulnerabilities = 0
 
                     # Check unconstrained states
-                    if self.simgr.unconstrained:
-                        new_vulnerabilities += len(self.simgr.unconstrained)
+                    if simgr.unconstrained:
+                        new_vulnerabilities += len(simgr.unconstrained)
 
                     # Check errored states for vulnerabilities
-                    if self.simgr.errored:
-                        for error_record in self.simgr.errored:
+                    if simgr.errored:
+                        for error_record in simgr.errored:
                             if self._is_vulnerability_state(error_record):
                                 new_vulnerabilities += 1
 
@@ -817,38 +792,43 @@ class TraceGuard:
                         my_logger.info(
                             f"First vulnerability found at {self.first_vuln_time:.3f}s"
                         )
+                
+                return simgr
 
-                # Optional: Log progress every 100 steps
-                if step_count % 100 == 0:
-                    my_logger.debug(
-                        f"Step {step_count}: {len(self.simgr.active)} active states"
-                    )
-
-            # Log completion info
-            if step_count >= max_steps:
-                my_logger.warning(f"Reached maximum step limit ({max_steps})")
-
-            my_logger.info(f"Simulation completed after {step_count} steps")
+            # Run simulation with proper timeout using angr's built-in mechanism
+            my_logger.info(f"Running simulation with {timeout}s timeout" if timeout else "Running simulation without timeout")
+            
+            self.simgr.run(
+                step_func=step_with_vuln_check,
+                timeout=timeout,
+                step_limit=500
+            )
+            
             success = True
             error_message = None
+            
+            my_logger.info("Simulation completed successfully")
 
+        except angr.errors.AngrTimeoutError:
+            my_logger.warning(f"TIMEOUT: Analysis stopped after {timeout}s")
+            success = True
+            error_message = f"Timeout after {timeout}s"
+            
         except angr.errors.AngrTracerError as e:
             my_logger.warning(
                 f"AngrTracerError during simulation: {e}. Results may be partial."
             )
             success = False
             error_message = f"AngrTracerError: {e}"
+            
         except Exception as e:
             my_logger.error(f"Unexpected error during simulation: {e}")
             import traceback
-
             traceback.print_exc()
             success = False
             error_message = f"Unexpected error: {e}"
 
         analysis_time = time.time() - analysis_start_time
-
-        my_logger.info("Simulation complete.")
 
         result = self._collect_analysis_result(
             success=success,
@@ -1151,27 +1131,24 @@ class TraceGuard:
         my_logger.info("=== END ANALYSIS RESULTS ===")
 
     def _update_state_taint_score(self, state, called_name, is_tainted):
-        """
-        Update the taint score for a state based on function call analysis.
-        This integrates with TaintGuidedExploration for prioritization.
-        """
+        """Enhanced taint scoring using configurable constants"""
         current_score = state.globals.get("taint_score", 0)
-
+        
         if is_tainted:
-            # Increase score for tainted interactions
             if called_name in INPUT_FUNCTION_NAMES:
                 current_score += TAINT_SCORE_INPUT_FUNCTION
             else:
                 current_score += TAINT_SCORE_TAINTED_CALL
         else:
-            # Small boost just for function calls (exploration progress)
             current_score += TAINT_SCORE_FUNCTION_CALL
 
-        # Apply decay to prevent infinite score growth
+        # Apply decay factor
         current_score *= TAINT_SCORE_DECAY_FACTOR
+        
+        # Apply minimum score for tainted states
         if is_tainted:
             current_score = max(current_score, TAINT_SCORE_MINIMUM_TAINTED)
-
+        
         state.globals["taint_score"] = max(current_score, 0.0)
 
     def _visualize_graph(self):
