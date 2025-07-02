@@ -1,8 +1,36 @@
 % !TEX root = ../Thesis.tex
 \chapter{Future Work}
 
-Some ideas for future work could be:
-- Change meta file to actual header file
-- Make it work also for ARM and X86 (checking stack and heap arguments)
-- Check that it works also for libraries (not only for main function)
-- Let the script analyze a complex program (multiple files) and get an output over all (now it only works for one file at a time)
+While TraceGuard demonstrates significant improvements in vulnerability discovery through taint-guided symbolic execution, several avenues for enhancement and extension remain. This chapter outlines potential improvements and research directions that could further advance the effectiveness and applicability of the approach.
+
+\section{Enhanced Configuration and Usability}
+
+\textbf{Header File Integration:} The current meta file system could be replaced with direct parsing of C/C++ header files. This enhancement would automatically extract function signatures and parameter information, eliminating the need for manual meta file creation and reducing potential configuration errors. Integration with standard build systems could enable automatic header discovery and parsing.
+
+\textbf{Adaptive Parameter Configuration:} The current implementation uses hardcoded constants for exploration limits and scoring parameters. Future versions could implement adaptive parameter selection based on program complexity metrics such as cyclomatic complexity, function count, or control flow graph density. The length limiter, currently set to 1000 instructions, could dynamically adjust based on program characteristics and available computational resources.
+
+\textbf{Custom Entry Point Support:} TraceGuard currently begins analysis from the main function. Supporting user-defined entry points would enable focused analysis of specific program regions or library functions. This feature would be particularly valuable for analyzing large applications where security-critical functionality is isolated in specific modules.
+
+\section{Architecture and Platform Extensions}
+
+\textbf{Multi-Architecture Support:} While TraceGuard includes basic support for x86 architectures, comprehensive validation and optimization for ARM and x86 platforms remains incomplete. Future work should focus on robust parameter analysis for stack-based calling conventions and architecture-specific optimizations to ensure accurate taint tracking across different platforms.
+
+\textbf{Library Analysis Capabilities:} The current implementation focuses on executable programs with clear entry points. Extending support for library analysis would require developing techniques for identifying and prioritizing library entry points, potentially integrating approaches from static analysis tools that specialize in library interface discovery.
+
+\section{Scalability and Real-World Applications}
+
+\textbf{Multi-File Program Analysis:} TraceGuard currently analyzes single binary files. Real-world applications often consist of multiple modules, shared libraries, and complex dependencies. Future development should focus on whole-program analysis capabilities that can track taint flow across module boundaries and analyze complete software systems.
+
+\textbf{Complex Program Validation:} The current evaluation relies on synthetic test programs with known vulnerabilities. Validation on large-scale, real-world software systems would provide crucial insights into the approach's practical effectiveness and identify areas requiring optimization for production deployment.
+
+\section{Input Source Expansion}
+
+\textbf{Comprehensive Input Function Coverage:} The current implementation primarily focuses on standard input functions like \texttt{fgets} and \texttt{scanf}. Expanding coverage to include network I/O functions, file operations, command-line argument processing, and inter-process communication would provide more comprehensive taint source detection for realistic attack vectors.
+
+\textbf{Dynamic Taint Source Discovery:} Rather than relying on predefined lists of input functions, future versions could implement dynamic discovery of potential taint sources through program analysis or runtime monitoring, enabling analysis of applications with non-standard input mechanisms.
+
+\section{Performance Optimization}
+
+\textbf{Parameter Fine-Tuning:} The scoring algorithm and prioritization thresholds could benefit from systematic optimization through extensive testing across diverse program types. Machine learning approaches could potentially identify optimal parameter configurations based on program characteristics and vulnerability patterns.
+
+\textbf{Exploration Strategy Refinement:} Advanced exploration strategies could incorporate additional heuristics such as program structure analysis, dependency tracking, or feedback from previous analysis runs to further improve the efficiency of vulnerability discovery.
