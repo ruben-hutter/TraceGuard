@@ -11,13 +11,14 @@ from taint_se import AnalysisResult, TraceGuard
 # URL for the Schnauzer web UI
 VIZ_URL = "http://127.0.0.1:8080"
 
+
 def parse_args(args: list) -> Dict[str, Any]:
     """
     Parse command line arguments into a dictionary for taint_se module.
-    
+
     Args:
         args: Command line arguments (excluding binary path)
-        
+
     Returns:
         Dictionary of parsed arguments
     """
@@ -28,11 +29,11 @@ def parse_args(args: list) -> Dict[str, Any]:
         "show_syscall_prints": False,
         "meta_file": None,
     }
-    
+
     i = 0
     while i < len(args):
         arg = args[i]
-        
+
         if arg in ["--verbose", "-v"]:
             parsed_args["verbose"] = True
         elif arg in ["--debug", "-d"]:
@@ -44,25 +45,28 @@ def parse_args(args: list) -> Dict[str, Any]:
         elif arg == "--meta-file" and i + 1 < len(args):
             parsed_args["meta_file"] = args[i + 1]
             i += 1  # Skip next argument
-        
+
         i += 1
-    
+
     return parsed_args
 
-def check_server_ready(host: str = "127.0.0.1", port: int = 8080, timeout: float = 30.0) -> bool:
+
+def check_server_ready(
+    host: str = "127.0.0.1", port: int = 8080, timeout: float = 30.0
+) -> bool:
     """
     Check if server is ready to accept connections.
-    
+
     Args:
         host: Server host
-        port: Server port  
+        port: Server port
         timeout: Maximum time to wait
-        
+
     Returns:
         True if server is ready, False otherwise
     """
     import socket
-    
+
     start_time = time.time()
     while time.time() - start_time < timeout:
         try:
@@ -74,26 +78,25 @@ def check_server_ready(host: str = "127.0.0.1", port: int = 8080, timeout: float
         except (socket.error, OSError):
             pass
         time.sleep(0.1)
-    
+
     return False
+
 
 def start_server_and_browser_async(server_process_container: dict) -> None:
     """
     Start Schnauzer server and browser in a separate thread.
     Uses a container dict to return the process to the main thread.
-    
+
     Args:
         server_process_container: Dict to store the server process
     """
     try:
         print("Starting schnauzer-server...")
         server_process = subprocess.Popen(
-            ["schnauzer-server"], 
-            stdout=subprocess.DEVNULL, 
-            stderr=subprocess.DEVNULL
+            ["schnauzer-server"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         )
-        server_process_container['process'] = server_process
-        
+        server_process_container["process"] = server_process
+
         # Wait for server to be ready
         if check_server_ready(timeout=15.0):
             # Open browser once server is confirmed ready
@@ -104,36 +107,41 @@ def start_server_and_browser_async(server_process_container: dict) -> None:
                 print(f"Could not open browser: {e}", file=sys.stderr)
                 print(f"Please manually navigate to {VIZ_URL}", file=sys.stderr)
         else:
-            print("Warning: Server did not become ready within timeout", file=sys.stderr)
-            
+            print(
+                "Warning: Server did not become ready within timeout", file=sys.stderr
+            )
+
     except FileNotFoundError:
         print("Warning: 'schnauzer-server' command not found.", file=sys.stderr)
         print("Visualization will not be available.", file=sys.stderr)
-        print("Please ensure Schnauzer is installed and in your system's PATH.", file=sys.stderr)
-        server_process_container['process'] = None
+        print(
+            "Please ensure Schnauzer is installed and in your system's PATH.",
+            file=sys.stderr,
+        )
+        server_process_container["process"] = None
     except Exception as e:
         print(f"Failed to start schnauzer-server: {e}", file=sys.stderr)
-        server_process_container['process'] = None
+        server_process_container["process"] = None
+
 
 def start_schnauzer_server() -> tuple[dict, threading.Thread]:
     """
     Start the Schnauzer visualization server in parallel.
-    
+
     Returns:
         Tuple of (server_container, thread) where server_container will contain the process
     """
     # Container to pass server process back from thread
-    server_container = {'process': None}
-    
+    server_container = {"process": None}
+
     # Start server and browser in background thread
     server_thread = threading.Thread(
-        target=start_server_and_browser_async,
-        args=(server_container,),
-        daemon=True
+        target=start_server_and_browser_async, args=(server_container,), daemon=True
     )
     server_thread.start()
-    
+
     return server_container, server_thread
+
 
 def stop_schnauzer_server(server_process: subprocess.Popen) -> None:
     """Stop the Schnauzer server process."""
@@ -148,6 +156,7 @@ def stop_schnauzer_server(server_process: subprocess.Popen) -> None:
             server_process.wait()
         print("Server shut down.")
 
+
 def open_visualization_browser() -> None:
     """Open the web browser for visualization."""
     try:
@@ -157,24 +166,28 @@ def open_visualization_browser() -> None:
         print(f"Could not open browser: {e}", file=sys.stderr)
         print(f"Please manually navigate to {VIZ_URL}", file=sys.stderr)
 
+
 # TODO: eventually remove emojis
 def print_analysis_summary(result: AnalysisResult) -> None:
     """Print a concise summary that complements the detailed taint_se.py logs."""
     if result.success:
         print("\n✅ Analysis completed successfully!")
-        
+
         if result.vulnerabilities_found > 0:
             print(f"🚨 Vulnerabilities found: {result.vulnerabilities_found}")
-        
+
         if result.taint_sources_found > 0:
             print(f"🔍 Taint sources detected: {result.taint_sources_found}")
-            
+
         if len(result.tainted_functions) > 0:
-            print(f"📊 Functions processing tainted data: {len(result.tainted_functions)}")
+            print(
+                f"📊 Functions processing tainted data: {len(result.tainted_functions)}"
+            )
     else:
         print("\n❌ Analysis failed!")
         if result.error_message:
             print(f"Error: {result.error_message}")
+
 
 def main():
     """
@@ -208,7 +221,7 @@ def main():
 
     # Parse arguments
     analysis_args = parse_args(sys.argv[2:])
-    
+
     # Start Schnauzer server and browser
     server_container, server_thread = start_schnauzer_server()
 
@@ -216,15 +229,15 @@ def main():
         # Run analysis while server starts up
         trace_guard = TraceGuard(binary_path, analysis_args)
         result = trace_guard.run_analysis()
-        
+
         # Wait for server thread to complete
         server_thread.join(timeout=5.0)
-        
+
         # Get the server process from the container
-        server_process = server_container.get('process')
-        
+        server_process = server_container.get("process")
+
         print_analysis_summary(result)
-        
+
         if result.success:
             if server_process:
                 print(f"🌐 Visualization available at: {VIZ_URL}")
@@ -234,7 +247,7 @@ def main():
                 print("Note: Visualization server could not be started.")
         else:
             sys.exit(1)
-            
+
     except KeyboardInterrupt:
         print("\nAnalysis interrupted by user.")
         sys.exit(1)
@@ -242,9 +255,10 @@ def main():
         print(f"Unexpected error occurred: {e}", file=sys.stderr)
         sys.exit(1)
     finally:
-        server_process = server_container.get('process')
+        server_process = server_container.get("process")
         if server_process:
             stop_schnauzer_server(server_process)
+
 
 if __name__ == "__main__":
     main()

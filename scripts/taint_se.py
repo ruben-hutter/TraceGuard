@@ -100,6 +100,7 @@ class AnalysisResult:
 
 class AnalysisSetupError(Exception):
     """Custom exception for errors during TaintAnalyzer setup."""
+
     pass
 
 
@@ -177,6 +178,10 @@ class TraceGuard:
         if self.args.get("debug"):
             debug_formatter = logging.Formatter(DEBUG_LOG_FORMAT)
             console_handler.setFormatter(debug_formatter)
+
+        # Quiet mode for benchmarks
+        if self.args.get("quite", False):
+            my_logger.setLevel(logging.CRITICAL)
 
         my_logger.propagate = False
 
@@ -332,7 +337,7 @@ class TraceGuard:
                 initial_state, save_unconstrained=True
             )
 
-            self.simgr.use_technique(angr.exploration_techniques.LengthLimiter(1000))
+            self.simgr.use_technique(angr.exploration_techniques.LengthLimiter(100))
             if self.cfg:
                 self.simgr.use_technique(
                     angr.exploration_techniques.LoopSeer(cfg=self.cfg)
@@ -373,6 +378,10 @@ class TraceGuard:
             for var_name in value.variables:
                 if var_name.startswith("taint_source_"):
                     return True
+
+        value_str = str(value)
+        if "taint_source_" in value_str:
+            return True
 
         if not value.symbolic:
             try:
@@ -453,6 +462,30 @@ class TraceGuard:
         except Exception as e:
             my_logger.error(f"Error tainting buffer for {called_func_name}: {e}")
 
+    def _taint_scanf_buffer(self, state, called_func_name):
+        """Handle scanf taint properly"""
+        if self.project.arch.name != "AMD64":
+            return
+
+        try:
+            # Get the variable address (second parameter)
+            var_ptr_val = state.regs.rsi
+            var_addr = state.solver.eval_one(var_ptr_val)
+            
+            # Create a symbolic integer with clear taint marking
+            taint_id = f"taint_source_{called_func_name}_{self.project.hook_call_id_counter}"
+            # Use 32-bit BVS for integer
+            tainted_int = claripy.BVS(taint_id, 32)
+            
+            # Store the tainted integer at the variable location
+            state.memory.store(var_addr, tainted_int, endness=self.project.arch.memory_endness)
+            self.project.tainted_memory_regions[var_addr] = 4  # 4 bytes for int
+            
+            my_logger.debug(f"TAINTED: Integer at {var_addr:#x} with {taint_id}")
+            
+        except Exception as e:
+            my_logger.error(f"Error in scanf taint: {e}")
+
     def _input_function_hook(self, state):
         """
         Hook for input functions to mark their outputs as tainted.
@@ -486,6 +519,8 @@ class TraceGuard:
 
         if called_func_name == "fgets":
             self._taint_fgets_buffer(state, called_func_name)
+        elif called_func_name == "scanf":
+            self._taint_scanf_buffer(state, called_func_name)
         # TODO: Add more input functions here (e.g., read, recv) adapting argument registers and logic
 
     def _check_pointer_for_taint(self, state, ptr_value, called_name, arg_reg_name):
@@ -711,9 +746,14 @@ class TraceGuard:
         my_logger.info("Hooking functions with taint analysis logic...")
         hooked_count = 0
         for func_addr, func_details in self.func_info_map.items():
+            is_input_function = any(
+                input_func in func_details["name"]
+                for input_func in INPUT_FUNCTION_NAMES
+            )
+
             hook = (
                 self._input_function_hook
-                if func_details["name"] in INPUT_FUNCTION_NAMES
+                if is_input_function
                 else self._generic_function_hook
             )
 
@@ -726,7 +766,7 @@ class TraceGuard:
                 )
         my_logger.info(f"Hooked {hooked_count} functions for taint analysis.")
 
-    def run_analysis(self) -> AnalysisResult:
+    def run_analysis(self, timeout=None) -> AnalysisResult:
         """
         Executes the symbolic analysis by hooking functions and running the simulation manager.
         It also reports the simulation results.
@@ -741,44 +781,53 @@ class TraceGuard:
             f"Starting simulation with {len(self.simgr.active)} initial state(s)."
         )
 
-        
         try:
             step_count = 0
-            max_steps = 10000
+            max_steps = 1000
             first_vuln_found = False
-            
+
             while self.simgr.active and step_count < max_steps:
+                if timeout and time.time() - analysis_start_time > timeout:
+                    my_logger.warning(
+                            f"TIMEOUT: Stopping analysis after {timeout}s"
+                    )
+                    break
+
                 self.simgr.step()
                 step_count += 1
-                
+
                 # Check for first vulnerability
                 if not first_vuln_found:
                     new_vulnerabilities = 0
-                    
+
                     # Check unconstrained states
                     if self.simgr.unconstrained:
                         new_vulnerabilities += len(self.simgr.unconstrained)
-                    
+
                     # Check errored states for vulnerabilities
                     if self.simgr.errored:
                         for error_record in self.simgr.errored:
                             if self._is_vulnerability_state(error_record):
                                 new_vulnerabilities += 1
-                    
+
                     # Record time to first vulnerability
                     if new_vulnerabilities > 0:
                         self.first_vuln_time = time.time() - analysis_start_time
                         first_vuln_found = True
-                        my_logger.info(f"First vulnerability found at {self.first_vuln_time:.3f}s")
-                
+                        my_logger.info(
+                            f"First vulnerability found at {self.first_vuln_time:.3f}s"
+                        )
+
                 # Optional: Log progress every 100 steps
                 if step_count % 100 == 0:
-                    my_logger.debug(f"Step {step_count}: {len(self.simgr.active)} active states")
-            
+                    my_logger.debug(
+                        f"Step {step_count}: {len(self.simgr.active)} active states"
+                    )
+
             # Log completion info
             if step_count >= max_steps:
                 my_logger.warning(f"Reached maximum step limit ({max_steps})")
-            
+
             my_logger.info(f"Simulation completed after {step_count} steps")
             success = True
             error_message = None
@@ -817,19 +866,19 @@ class TraceGuard:
     def _is_server_running(self):
         """
         Check if Schnauzer server is running on the default address and port.
-        
+
         Returns:
             bool: True if server is accessible, False otherwise
         """
         import socket
         import urllib.request
         import urllib.error
-        
+
         # Default Schnauzer server configuration
         server_host = "127.0.0.1"
         server_port = 8080
         server_url = f"http://{server_host}:{server_port}"
-        
+
         try:
             # First, try a simple socket connection to check if port is open
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -837,7 +886,7 @@ class TraceGuard:
                 result = sock.connect_ex((server_host, server_port))
                 if result != 0:
                     return False
-            
+
             # If port is open, try an HTTP request to verify it's actually Schnauzer
             try:
                 with urllib.request.urlopen(server_url, timeout=2.0) as response:
@@ -849,7 +898,7 @@ class TraceGuard:
             except urllib.error.URLError:
                 # URL errors typically mean connection issues
                 return False
-                
+
         except (socket.error, OSError, Exception) as e:
             my_logger.debug(f"Server check failed: {e}")
             return False
@@ -946,7 +995,9 @@ class TraceGuard:
 
                 address = None
                 try:
-                    possible_addrs = unconstrained_state.solver.eval_upto(unconstrained_state.regs._ip, 2)
+                    possible_addrs = unconstrained_state.solver.eval_upto(
+                        unconstrained_state.regs._ip, 2
+                    )
                     if len(possible_addrs) == 1:
                         address = possible_addrs[0]
                     elif len(possible_addrs) > 1:
@@ -1056,7 +1107,9 @@ class TraceGuard:
         uncalled_functions = total_discovered - total_called
 
         my_logger.info(f"Functions discovered: {total_discovered}")
-        my_logger.info(f"Functions called: {total_called} ({result.functions_executed} executed, {result.functions_skipped} skipped)")
+        my_logger.info(
+            f"Functions called: {total_called} ({result.functions_executed} executed, {result.functions_skipped} skipped)"
+        )
         if uncalled_functions > 0:
             my_logger.info(f"Functions not reached: {uncalled_functions}")
 
@@ -1071,7 +1124,7 @@ class TraceGuard:
         # Taint-specific information
         if self.taint_exploration:
             metrics = self.taint_exploration.get_exploration_metrics()
-            
+
             my_logger.info(f"Taint sources found: {result.taint_sources_found}")
             my_logger.info(
                 f"Taint propagation paths: {metrics['taint_propagation_paths']}"
