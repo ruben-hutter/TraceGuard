@@ -6,9 +6,6 @@ TARGETS_DIR = examples
 TARGETS_SRC = $(wildcard $(TARGETS_DIR)/*.c)
 TARGETS_BIN = $(TARGETS_SRC:.c=)
 
-SCRIPTS_DIR = scripts
-PYTHON_ANALYZER = $(SCRIPTS_DIR)/main.py
-
 all: $(TARGETS_BIN)
 
 $(TARGETS_DIR)/%: $(TARGETS_DIR)/%.c
