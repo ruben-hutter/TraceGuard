@@ -26,19 +26,20 @@ Throughout the following algorithms, we use configurable parameters to maintain 
 TraceGuard identifies taint sources by hooking functions during program analysis. This hook-based approach enables runtime detection of external data entry points without requiring complex static analysis.
 
 \begin{algorithm}[H]
-    \caption{Function Hooking Strategy}\label{alg:function_hooking}
-\begin{algorithmic}[1]
-\Require Program binary $P$
-\State $CFG \gets \textsc{BuildControlFlowGraph}(P)$
-\State $InputFunctions \gets \{\text{fgets, scanf, read, gets}\}$
-\ForAll{function $f$ in $CFG$}
-    \If{$f.name \in InputFunctions$}
+    \caption{Function Hooking Strategy}
+    \label{alg:function_hooking}
+    \begin{algorithmic}[1]
+        \Require Program binary $P$
+        \State $CFG \gets \textsc{BuildControlFlowGraph}(P)$
+        \State $InputFunctions \gets \{\text{fgets, scanf, read, gets}\}$
+        \ForAll{function $f$ in $CFG$}
+        \If{$f.name \in InputFunctions$}
         \State $\textsc{InstallInputHook}(f)$
-    \Else
+        \Else
         \State $\textsc{InstallGenericHook}(f)$
-    \EndIf
-\EndFor
-\end{algorithmic}
+        \EndIf
+        \EndFor
+    \end{algorithmic}
 \end{algorithm}
 
 The system uses two types of hooks: input function hooks that immediately mark data as tainted, and generic hooks that check whether function parameters contain tainted data. This dual approach ensures both taint introduction and propagation are monitored throughout execution.
@@ -50,38 +51,40 @@ Input functions receive special treatment because they represent the primary vec
 TraceGuard tracks taint propagation through two complementary mechanisms: symbolic variable naming and memory region mapping. This approach ensures taint information persists across function calls and memory operations.
 
 \begin{algorithm}[H]
-    \caption{Taint Introduction at Input Functions}\label{alg:taint_introduction}
-\begin{algorithmic}[1]
-\Require Function call to input function $f$, State $s$
-\State $data \gets \textsc{CreateSymbolicData}(\text{taint\_source\_} + f.name)$
-\State $s.globals[\text{taint\_score}] \gets s.globals[\text{taint\_score}] + \alpha_{input}$
-\State $s.globals[\text{tainted\_functions}].add(f.name)$
-\If{$f$ involves memory allocation}
-    \State $buffer\_addr \gets \textsc{GetBufferAddress}(s)$
-    \State $buffer\_size \gets \textsc{GetBufferSize}(s)$
-    \State $s.globals[\text{tainted\_regions}].add((buffer\_addr, buffer\_size))$
-\EndIf
-\State \Return $data$
-\end{algorithmic}
+    \caption{Taint Introduction at Input Functions}
+    \label{alg:taint_introduction}
+    \begin{algorithmic}[1]
+        \Require Function call to input function $f$, State $s$
+        \State $data \gets \textsc{CreateSymbolicData}(\text{taint\_source\_} + f.name)$
+        \State $s.globals[\text{taint\_score}] \gets s.globals[\text{taint\_score}] + \alpha_{input}$
+        \State $s.globals[\text{tainted\_functions}].add(f.name)$
+        \If{$f$ involves memory allocation}
+        \State $buffer\_addr \gets \textsc{GetBufferAddress}(s)$
+        \State $buffer\_size \gets \textsc{GetBufferSize}(s)$
+        \State $s.globals[\text{tainted\_regions}].add((buffer\_addr, buffer\_size))$
+        \EndIf
+        \State \Return $data$
+    \end{algorithmic}
 \end{algorithm}
 
 Symbolic variable naming creates a persistent taint identifier that follows data through symbolic operations. Memory region tracking maintains a mapping of tainted buffer addresses and sizes, enabling taint detection when pointers reference previously tainted memory locations.
 
 \begin{algorithm}[H]
-    \caption{Taint Status Check}\label{alg:taint_status_check}
-\begin{algorithmic}[1]
-\Require State $s$, Variable or address $target$
-\If{$target$ is symbolic variable}
-    \State \Return $\text{taint\_source\_} \in target.name$
-\ElsIf{$target$ is memory address}
-    \ForAll{$(addr, size)$ in $s.globals[\text{tainted\_regions}]$}
+    \caption{Taint Status Check}
+    \label{alg:taint_status_check}
+    \begin{algorithmic}[1]
+        \Require State $s$, Variable or address $target$
+        \If{$target$ is symbolic variable}
+        \State \Return $\text{taint\_source\_} \in target.name$
+        \ElsIf{$target$ is memory address}
+        \ForAll{$(addr, size)$ in $s.globals[\text{tainted\_regions}]$}
         \If{$addr \leq target < addr + size$}
-            \State \Return $\textsc{True}$
+        \State \Return $\textsc{True}$
         \EndIf
-    \EndFor
-\EndIf
-\State \Return $\textsc{False}$
-\end{algorithmic}
+        \EndFor
+        \EndIf
+        \State \Return $\textsc{False}$
+    \end{algorithmic}
 \end{algorithm}
 
 Additionally, memory region tracking maintains a mapping of tainted buffer addresses and sizes, enabling taint detection when pointers reference previously tainted memory locations.
@@ -91,37 +94,39 @@ Additionally, memory region tracking maintains a mapping of tainted buffer addre
 TraceGuard implements a three-tier prioritization system that classifies symbolic execution states based on their calculated taint scores. This classification determines exploration order to focus computational resources on security-relevant paths.
 
 \begin{algorithm}[H]
-    \caption{State Classification and Prioritization}\label{alg:state_classification}
-\begin{algorithmic}[1]
-\Require Active states $\mathcal{S}$, Thresholds $\tau_{high}$, $\tau_{medium}$
-\State $scored\_states \gets []$
-\ForAll{state $s \in \mathcal{S}$}
-    \State $score \gets \textsc{CalculateTaintScore}(s)$
-    \State $scored\_states.append((score, s))$
-\EndFor
-\State $P_{high} \gets \{s : score \geq \tau_{high}\}$
-\State $P_{medium} \gets \{s : \tau_{medium} \leq score < \tau_{high}\}$ 
-\State $P_{normal} \gets \{s : score < \tau_{medium}\}$
-\State exploration\_queue $\gets P_{high} + P_{medium} + P_{normal}$
-\State \Return first $k$ states from exploration\_queue
-\end{algorithmic}
+    \caption{State Classification and Prioritization}
+    \label{alg:state_classification}
+    \begin{algorithmic}[1]
+        \Require Active states $\mathcal{S}$, Thresholds $\tau_{high}$, $\tau_{medium}$
+        \State $scored\_states \gets []$
+        \ForAll{state $s \in \mathcal{S}$}
+        \State $score \gets \textsc{CalculateTaintScore}(s)$
+        \State $scored\_states.append((score, s))$
+        \EndFor
+        \State $P_{high} \gets \{s : score \geq \tau_{high}\}$
+        \State $P_{medium} \gets \{s : \tau_{medium} \leq score < \tau_{high}\}$ 
+        \State $P_{normal} \gets \{s : score < \tau_{medium}\}$
+        \State exploration\_queue $\gets P_{high} + P_{medium} + P_{normal}$
+        \State \Return first $k$ states from exploration\_queue
+    \end{algorithmic}
 \end{algorithm}
 
 The score calculation combines multiple factors to assess security relevance. Base scores come from taint interactions tracked by function hooks, with additional bonuses for execution within previously identified tainted functions and penalty reductions for excessive execution depth.
 
 \begin{algorithm}[H]
-    \caption{Taint Score Calculation}\label{alg:taint_score_calculation}
-\begin{algorithmic}[1]
-\Require State $s$
-\State $score \gets \max(s.globals[\text{taint\_score}], \sigma_{min})$
-\If{current function $\in$ tainted functions}
-    \State $score \gets score + \beta_{tainted}$
-\EndIf
-\If{execution depth $> \delta_{threshold}$}
-    \State $score \gets score \times \gamma_{penalty}$
-\EndIf
-\State \Return $score$
-\end{algorithmic}
+    \caption{Taint Score Calculation}
+    \label{alg:taint_score_calculation}
+    \begin{algorithmic}[1]
+        \Require State $s$
+        \State $score \gets \max(s.globals[\text{taint\_score}], \sigma_{min})$
+        \If{current function $\in$ tainted functions}
+        \State $score \gets score + \beta_{tainted}$
+        \EndIf
+        \If{execution depth $> \delta_{threshold}$}
+        \State $score \gets score \times \gamma_{penalty}$
+        \EndIf
+        \State \Return $score$
+    \end{algorithmic}
 \end{algorithm}
 
 High-priority states typically represent paths directly processing user input or executing within security-critical functions. Medium-priority states show moderate taint relevance, while normal-priority states primarily handle untainted data. The system limits active states to prevent path explosion while maintaining adequate exploration coverage.
@@ -147,15 +152,16 @@ The preference for shorter paths in vulnerability discovery is grounded in both 
 Research on real-world vulnerability databases demonstrates that critical security flaws such as buffer overflows and injection attacks are statistically more likely to occur in shallow call stacks near input sources than in deeply nested program logic. This observation aligns with attack surface theory, which suggests that the most accessible vulnerabilities are those that can be triggered with minimal program state setup, making them both more discoverable by automated tools and more attractive to attackers.
 
 \begin{algorithm}[H]
-    \caption{Progressive Depth Penalties}\label{alg:depth_penalties}
-\begin{algorithmic}[1]
-\Require State $s$ with execution depth $d$
-\If{$d > \delta_{high}$}
-    \State $s.score \gets s.score \times \gamma_{high}$
-\ElsIf{$d > \delta_{medium}$}
-    \State $s.score \gets s.score \times \gamma_{medium}$
-\EndIf
-\end{algorithmic}
+    \caption{Progressive Depth Penalties}
+    \label{alg:depth_penalties}
+    \begin{algorithmic}[1]
+        \Require State $s$ with execution depth $d$
+        \If{$d > \delta_{high}$}
+        \State $s.score \gets s.score \times \gamma_{high}$
+        \ElsIf{$d > \delta_{medium}$}
+        \State $s.score \gets s.score \times \gamma_{medium}$
+        \EndIf
+    \end{algorithmic}
 \end{algorithm}
 
 The depth penalty system gradually reduces state scores as execution depth increases, naturally prioritizing shorter paths that are more likely to trigger vulnerabilities quickly. This graduated approach avoids abrupt path termination while steering exploration toward more promising regions of the program space. The system employs configurable depth thresholds ($\delta_{high}$, $\delta_{medium}$) and penalty factors ($\gamma_{high}$, $\gamma_{medium}$) to balance thorough exploration with computational efficiency.
