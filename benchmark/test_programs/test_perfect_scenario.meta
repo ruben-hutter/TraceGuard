@@ -1,0 +1,5 @@
+void complex_untainted_analysis_1(int val);
+void complex_untainted_analysis_2(int val);
+void complex_untainted_analysis_3(int val);
+void mega_untainted_computation();
+void immediate_vulnerability(char *tainted_data);

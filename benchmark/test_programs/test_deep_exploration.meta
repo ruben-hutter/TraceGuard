@@ -1,8 +1,8 @@
 // test_deep_exploration.c meta file
-void expensive_computation_1();
-void expensive_computation_2();
-void expensive_computation_3();
-void untainted_branch_1();
-void untainted_branch_2();
-void untainted_branch_3();
-void vulnerable_function(char *user_input);
+void expensive_computation_1(int x);
+void expensive_computation_2(int y);
+void expensive_computation_3(int z);
+void untainted_branch_1(int val);
+void untainted_branch_2(int val);
+void untainted_branch_3(int val);
+void clear_vulnerability(char *user_input);

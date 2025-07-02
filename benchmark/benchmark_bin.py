@@ -139,7 +139,7 @@ class BenchmarkRunner:
             simgr = proj.factory.simulation_manager(state, save_unconstrained=True)
 
             # Add exploration techniques for fair comparison
-            simgr.use_technique(angr.exploration_techniques.LengthLimiter(100))
+            simgr.use_technique(angr.exploration_techniques.LengthLimiter(1000))
 
             # Build CFG for LoopSeer
             try:
@@ -152,82 +152,85 @@ class BenchmarkRunner:
             simgr.use_technique(angr.exploration_techniques.DFS())
 
             # Track metrics
-            step_count = 0
             basic_blocks_covered = set()
             vulnerabilities_found = 0
             time_to_first_vuln = None
             start_time = time.time()
-            vuln_start_time = time.time()
+            first_vuln_found = False
 
             self.logger.info("Starting classical Angr exploration...")
 
-            # Run exploration with timeout and step limit
-            max_steps = 1000
-
-            while (
-                simgr.active
-                and (time.time() - start_time) < self.timeout
-                and step_count < max_steps
-            ):
-                # Step the simulation
+            # Create a custom step function to track vulnerabilities and metrics
+            def step_with_metrics(simgr):
+                nonlocal first_vuln_found, vulnerabilities_found, time_to_first_vuln, basic_blocks_covered
+                
+                # Perform the actual step
                 simgr.step()
-                step_count += 1
-
+                
                 # Track basic blocks covered
                 for state in simgr.active:
                     if state.addr:
                         basic_blocks_covered.add(state.addr)
 
                 # Check for vulnerabilities
-                new_vulnerabilities = 0
+                if not first_vuln_found:
+                    new_vulnerabilities = 0
 
-                # Check unconstrained states (potential buffer overflows)
-                if simgr.unconstrained:
-                    new_vuln_count = len(simgr.unconstrained)
-                    if new_vuln_count > 0:
-                        if vulnerabilities_found == 0:
-                            time_to_first_vuln = time.time() - vuln_start_time
-                        new_vulnerabilities += new_vuln_count
-                        self.logger.info(f"Found {new_vuln_count} unconstrained states")
+                    # Check unconstrained states (potential buffer overflows)
+                    if simgr.unconstrained:
+                        new_vuln_count = len(simgr.unconstrained)
+                        if new_vuln_count > 0:
+                            new_vulnerabilities += new_vuln_count
+                            self.logger.info(f"Found {new_vuln_count} unconstrained states")
 
-                # Check errored states for potential vulnerabilities
-                if simgr.errored:
-                    for error_record in simgr.errored:
-                        error_str = str(error_record.error).lower()
-                        if any(
-                            vuln_indicator in error_str
-                            for vuln_indicator in [
-                                "segmentation fault",
-                                "segfault",
-                                "buffer overflow",
-                                "stack overflow",
-                                "heap overflow",
-                                "access violation",
-                                "memory error",
-                                "sigsegv",
-                            ]
-                        ):
-                            if vulnerabilities_found == 0 and new_vulnerabilities == 0:
-                                time_to_first_vuln = time.time() - vuln_start_time
-                            new_vulnerabilities += 1
+                    # Check errored states for potential vulnerabilities
+                    if simgr.errored:
+                        for error_record in simgr.errored:
+                            error_str = str(error_record.error).lower()
+                            if any(
+                                vuln_indicator in error_str
+                                for vuln_indicator in [
+                                    "segmentation fault",
+                                    "segfault",
+                                    "buffer overflow",
+                                    "stack overflow",
+                                    "heap overflow",
+                                    "access violation",
+                                    "memory error",
+                                    "sigsegv",
+                                ]
+                            ):
+                                new_vulnerabilities += 1
 
-                    # Clear errored states to avoid re-counting
-                    simgr.errored.clear()
+                    # Record time to first vulnerability
+                    if new_vulnerabilities > 0:
+                        time_to_first_vuln = time.time() - start_time
+                        first_vuln_found = True
+                        vulnerabilities_found += new_vulnerabilities
+                        self.logger.info(
+                            f"First vulnerability found at {time_to_first_vuln:.3f}s"
+                        )
+                
+                return simgr
 
-                vulnerabilities_found += new_vulnerabilities
-
-                # Log progress periodically
-                if step_count % 100 == 0:
-                    self.logger.info(
-                        f"Step {step_count}: {len(simgr.active)} active states, "
-                        f"{len(basic_blocks_covered)} blocks covered, "
-                        f"{vulnerabilities_found} vulnerabilities found"
-                    )
-
-                # Break if no active states
-                if not simgr.active:
-                    self.logger.info("No more active states, exploration complete")
-                    break
+            # Run simulation with proper timeout using angr's built-in mechanism
+            try:
+                self.logger.info(f"Running classical simulation with {self.timeout}s timeout")
+                
+                simgr.run(
+                    step_func=step_with_metrics,
+                    timeout=self.timeout,
+                    step_limit=500  # Prevent infinite loops
+                )
+                
+                success = True
+                error_message = None
+                self.logger.info("Classical Angr completed successfully")
+                
+            except angr.errors.AngrTimeoutError:
+                self.logger.warning(f"TIMEOUT: Classical Angr analysis stopped after {self.timeout}s")
+                success = True  # Timeout is not a failure
+                error_message = f"Timeout after {self.timeout}s"
 
             execution_time = time.time() - start_time
 
@@ -240,27 +243,22 @@ class BenchmarkRunner:
             )
 
             self.logger.info(f"Classical Angr completed in {execution_time:.2f}s")
-            self.logger.info(f"Steps taken: {step_count}")
             self.logger.info(f"Total states: {total_states}")
             self.logger.info(f"Basic blocks covered: {len(basic_blocks_covered)}")
             self.logger.info(f"Vulnerabilities found: {vulnerabilities_found}")
-
-            # Check for timeout
-            if (time.time() - start_time) >= self.timeout:
-                self.logger.warning("Classical Angr analysis timed out")
 
             memory_usage = self._get_memory_usage()
 
             return BenchmarkResult(
                 approach="Classical Angr",
-                success=True,
+                success=success,
                 execution_time=execution_time,
                 states_explored=total_states,
                 basic_blocks_covered=len(basic_blocks_covered),
                 vulnerabilities_found=vulnerabilities_found,
                 time_to_first_vuln=time_to_first_vuln,
                 memory_usage_mb=memory_usage,
-                error_message=None,
+                error_message=error_message,
             )
 
         except Exception as e:
