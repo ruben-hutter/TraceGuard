@@ -161,10 +161,10 @@ class TaintGuidedExploration(ExplorationTechnique):
 
             # Small penalty for excessive depth to avoid infinite loops
             depth = len(state.history.bbl_addrs) if state.history.bbl_addrs else 0
-            if depth > 200:
-                score *= 0.95
-            elif depth > 400:
+            if depth > 400:
                 score *= 0.9
+            elif depth > 200:
+                score *= 0.95
 
             # Bonus for potential to discover new tainted functions
             if (
