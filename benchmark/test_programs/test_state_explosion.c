@@ -1,4 +1,4 @@
-// test_state_explosion_fixed.c - String input instead of integer
+// test_state_explosion.c - String input instead of integer
 #include <stdio.h>
 #include <string.h>
 
