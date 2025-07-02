@@ -139,46 +139,16 @@ All performance measurements demonstrate high statistical reliability with accep
 
 \section{Discussion and Analysis}
 
-\subsection{Strengths of Taint-Guided Exploration}
+The experimental results demonstrate that TraceGuard successfully addresses the core research questions, achieving superior vulnerability detection effectiveness while maintaining competitive computational performance. However, several limitations and practical considerations must be acknowledged for a complete assessment of the approach.
 
-\textbf{Superior Security Analysis in Critical Scenarios:} The most significant finding is TraceGuard's ability to achieve 5x better vulnerability detection in the most challenging test scenario while maintaining reasonable execution time. The test\_state\_explosion results demonstrate a fundamental advantage: where classical approaches struggle with complex control flow, TraceGuard's focused exploration successfully identifies multiple critical security vulnerabilities.
+\subsection{Limitations and Practical Considerations} The evaluation relies on carefully crafted synthetic test programs with predefined taint sources (primarily \texttt{fgets} and similar input functions) and known vulnerability patterns. This controlled environment may not fully represent the complexity of real-world commercial software, where taint sources can be diverse, indirect, or context-dependent. The effectiveness of the approach on large-scale applications with complex data flow patterns remains to be validated.
 
-\textbf{Effective State Explosion Mitigation:} The test\_state\_explosion and test\_conditional\_explosion results demonstrate that taint-guided prioritization effectively manages computational complexity in challenging scenarios. The ability to identify multiple critical vulnerabilities with superior efficiency addresses a primary limitation of classical symbolic execution, directly answering RQ3.
+\textbf{Taint Source Identification Dependency:} TraceGuard's effectiveness is fundamentally dependent on accurate identification of taint sources. The current implementation focuses on standard input functions, but real-world applications may receive untrusted data through network protocols, file formats, inter-process communication, or other vectors that require additional analysis to identify as taint sources.
 
-\textbf{Efficient Resource Utilization:} TraceGuard achieves superior security analysis results while exploring only 37-75\% of the basic blocks covered by classical symbolic execution. This represents a fundamental improvement in analysis efficiency for security-focused applications, directly addressing the scalability challenges that plague traditional symbolic execution and providing evidence for RQ4.
+\textbf{Limited Architecture and Language Scope:} The evaluation focuses exclusively on AMD64 binaries compiled from C/C++ programs. Generalization to other architectures, programming languages, or execution environments (such as interpreted languages or virtual machines) requires additional validation and potentially significant implementation modifications.
 
-\textbf{Consistent Performance Across Diverse Scenarios:} TraceGuard maintains reliable performance across varying program characteristics, from simple linear programs to complex recursive and multi-function scenarios, indicating robust applicability to real-world software analysis.
+\textbf{Scalability Assumptions:} While the results suggest positive scalability characteristics, the evaluation does not include large-scale programs or complex commercial software systems. The overhead of taint tracking and scoring mechanisms may become more significant as program size and complexity increase, particularly in applications with extensive library dependencies or complex control flow structures.
 
-\subsection{Performance Trade-offs and Considerations}
+\vspace{1em}
 
-\textbf{Acceptable Taint Tracking Overhead:} Most test scenarios show minimal execution time overhead (0.1-5.3\%) attributable to taint tracking and scoring computations. This overhead is more than justified by the superior vulnerability detection capabilities, particularly in challenging scenarios where the approach excels.
-
-\textbf{Intentional Coverage Reduction:} The reduced coverage represents an intended optimization for security analysis rather than a limitation. The results demonstrate that strategic exploration of security-relevant paths yields better vulnerability discovery than exhaustive coverage, validating the core hypothesis of taint-guided symbolic execution.
-
-\textbf{Implementation Complexity Benefits:} While the taint-guided approach introduces additional implementation complexity compared to classical symbolic execution, the results demonstrate that this complexity investment yields significant returns in terms of analysis effectiveness and reliability.
-
-\subsection{Scalability and Practical Implications}
-
-The evaluation results suggest highly positive scalability characteristics for taint-guided symbolic execution. The maintained and improved performance in state explosion scenarios, combined with consistent behavior across varying program complexities, indicates that the approach should scale effectively to larger and more complex real-world applications. The ability to excel where classical approaches struggle suggests particular value for analyzing complex commercial software systems.
-
-\section{Threats to Validity}
-
-\subsection{Internal Validity}
-
-The controlled experimental environment and standardized benchmark suite minimize threats to internal validity. Multiple execution runs (10 per test program) and statistical analysis provide confidence in result reliability. The synthetic nature of test programs is mitigated by the inclusion of diverse complexity patterns and vulnerability types representative of real-world scenarios.
-
-\subsection{External Validity}
-
-The evaluation focuses on AMD64 binaries with specific vulnerability patterns. Generalization to other architectures, programming languages, or vulnerability classes requires additional validation. However, the benchmark suite represents common security vulnerability patterns and demonstrates the approach's effectiveness across diverse program structures.
-
-\subsection{Construct Validity}
-
-The evaluation metrics directly measure the intended performance characteristics of taint-guided symbolic execution. Vulnerability detection rate, execution time, and coverage metrics provide valid measures of the approach's effectiveness for security analysis applications. The clear superiority in challenging scenarios validates the core research hypothesis.
-
-\section{Summary}
-
-The empirical evaluation demonstrates that TraceGuard successfully addresses all primary research questions posed at the beginning of this chapter. The system achieves superior vulnerability detection effectiveness, particularly in challenging scenarios (RQ1), while maintaining competitive computational performance with acceptable overhead (RQ2). The approach effectively controls state explosion through focused exploration (RQ3) and demonstrates excellent scalability characteristics across diverse program scenarios (RQ4).
-
-The key finding is that taint-guided symbolic execution not only matches the security analysis objectives of classical symbolic execution but significantly exceeds them in challenging scenarios, while requiring only 37-75\% of the exploration overhead. Most importantly, TraceGuard achieves a 5x improvement in vulnerability detection in the most challenging state explosion scenario with reasonable resource usage, representing a fundamental advancement in the effectiveness and reliability of symbolic execution for security applications.
-
-These results demonstrate that taint-guided symbolic execution addresses critical limitations of classical approaches and provides a robust foundation for practical security analysis tools capable of handling complex real-world software systems.
+Despite these limitations, the evaluation demonstrates that the core contribution of taint-guided prioritization effectively addresses fundamental scalability challenges in symbolic execution, providing a foundation for future development of more comprehensive security analysis tools.

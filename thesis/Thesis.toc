@@ -39,23 +39,29 @@
 \contentsline {subsection}{\numberline {5.4.1}Command-Line Interface}{20}{subsection.62}%
 \contentsline {subsection}{\numberline {5.4.2}Usage Examples}{20}{subsection.63}%
 \contentsline {subsection}{\numberline {5.4.3}Integration Workflow}{21}{subsection.64}%
-\contentsline {chapter}{\chapternumberline {6}Evaluation}{22}{chapter.69}%
-\contentsline {section}{\numberline {6.1}Experimental Design}{22}{section.70}%
-\contentsline {subsection}{\numberline {6.1.1}Research Questions}{22}{subsection.71}%
-\contentsline {subsection}{\numberline {6.1.2}Evaluation Metrics}{22}{subsection.76}%
-\contentsline {section}{\numberline {6.2}Benchmark Programs}{22}{section.77}%
-\contentsline {subsection}{\numberline {6.2.1}Synthetic Benchmarks}{22}{subsection.78}%
-\contentsline {subsection}{\numberline {6.2.2}Real-World Programs}{22}{subsection.79}%
-\contentsline {section}{\numberline {6.3}Experimental Results}{22}{section.80}%
-\contentsline {subsection}{\numberline {6.3.1}Comparison with Standard Symbolic Execution}{22}{subsection.81}%
-\contentsline {subsection}{\numberline {6.3.2}Ablation Studies}{22}{subsection.82}%
-\contentsline {section}{\numberline {6.4}Case Studies}{22}{section.83}%
-\contentsline {subsection}{\numberline {6.4.1}Buffer Overflow Discovery}{22}{subsection.84}%
-\contentsline {subsection}{\numberline {6.4.2}Format String Vulnerability}{22}{subsection.85}%
-\contentsline {chapter}{\chapternumberline {7}Conclusion}{23}{chapter.86}%
-\contentsline {chapter}{\chapternumberline {8}Future Work}{24}{chapter.87}%
-\contentsline {chapter}{\chapternumberline {9}Usage of AI}{25}{chapter.88}%
+\contentsline {section}{\numberline {5.5}Practical Demonstration}{21}{section.69}%
+\contentsline {subsection}{\numberline {5.5.1}Example Program Analysis}{21}{subsection.70}%
+\contentsline {subsection}{\numberline {5.5.2}TraceGuard Execution and Visualization}{21}{subsection.71}%
+\contentsline {subsection}{\numberline {5.5.3}Taint Flow Visualization}{21}{subsection.72}%
+\contentsline {subsection}{\numberline {5.5.4}Analysis Results Interpretation}{21}{subsection.73}%
+\contentsline {chapter}{\chapternumberline {6}Evaluation}{22}{chapter.74}%
+\contentsline {section}{\numberline {6.1}Experimental Design}{22}{section.75}%
+\contentsline {subsection}{\numberline {6.1.1}Research Questions}{22}{subsection.76}%
+\contentsline {subsection}{\numberline {6.1.2}Evaluation Metrics}{22}{subsection.81}%
+\contentsline {subsection}{\numberline {6.1.3}Experimental Environment}{23}{subsection.82}%
+\contentsline {section}{\numberline {6.2}Benchmark Programs}{23}{section.83}%
+\contentsline {subsection}{\numberline {6.2.1}Synthetic Test Suite}{23}{subsection.84}%
+\contentsline {section}{\numberline {6.3}Experimental Results}{24}{section.85}%
+\contentsline {subsection}{\numberline {6.3.1}Vulnerability Detection Effectiveness}{24}{subsection.86}%
+\contentsline {subsection}{\numberline {6.3.2}Execution Time Performance}{24}{subsection.88}%
+\contentsline {subsection}{\numberline {6.3.3}Coverage Analysis and Path Efficiency}{25}{subsection.90}%
+\contentsline {subsection}{\numberline {6.3.4}Statistical Significance and Reliability}{25}{subsection.92}%
+\contentsline {section}{\numberline {6.4}Discussion and Analysis}{26}{section.93}%
+\contentsline {subsection}{\numberline {6.4.1}Limitations and Practical Considerations}{26}{subsection.94}%
+\contentsline {chapter}{\chapternumberline {7}Conclusion}{27}{chapter.95}%
+\contentsline {chapter}{\chapternumberline {8}Future Work}{28}{chapter.96}%
+\contentsline {chapter}{\chapternumberline {9}Usage of AI}{29}{chapter.97}%
 \vspace {2em}
-\contentsline {chapter}{Bibliography}{26}{appendix*.89}%
-\contentsline {appendix}{\chapternumberline {A}Appendix}{27}{appendix.90}%
+\contentsline {chapter}{Bibliography}{30}{appendix*.98}%
+\contentsline {appendix}{\chapternumberline {A}Appendix}{31}{appendix.99}%
 \vspace {2em}
