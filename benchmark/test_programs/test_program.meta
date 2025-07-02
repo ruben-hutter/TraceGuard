@@ -1,8 +1,0 @@
-// Benchmark program function signatures
-void untainted_helper1();
-void untainted_helper2();
-void untainted_helper3();
-void deep_vulnerable_function(char *user_data);
-void process_user_input(char *data);
-void validate_and_process(char *input);
-void handle_user_choice(int choice, char *user_input);

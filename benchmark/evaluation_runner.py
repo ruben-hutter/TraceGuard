@@ -1,6 +1,7 @@
 import json
 import argparse
 import logging
+import time
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict
@@ -8,6 +9,58 @@ import statistics
 import matplotlib.pyplot as plt
 
 from benchmark_bin import BenchmarkRunner
+
+class ProgressBar:
+    """Simple progress bar for terminal"""
+    
+    def __init__(self, total, prefix='Progress', length=50):
+        self.total = total
+        self.prefix = prefix
+        self.length = length
+        self.current = 0
+        
+    def update(self, current, suffix=''):
+        self.current = current
+        percent = (current / self.total) * 100
+        filled_length = int(self.length * current // self.total)
+        bar = '█' * filled_length + '-' * (self.length - filled_length)
+        
+        print(f'\r{self.prefix} |{bar}| {current}/{self.total} ({percent:.1f}%) {suffix}', end='', flush=True)
+        
+        if current == self.total:
+            print()  # New line when complete
+
+class QuietBenchmarkRunner(BenchmarkRunner):
+    """Benchmark runner with suppressed output"""
+    
+    def __init__(self, binary_path: str, timeout: int = 120):
+        super().__init__(binary_path, timeout)
+        # Suppress all logging for this runner
+        self.logger.setLevel(logging.CRITICAL)
+        
+        # Suppress angr logging
+        logging.getLogger('angr').setLevel(logging.CRITICAL)
+        logging.getLogger('cle').setLevel(logging.CRITICAL)
+        logging.getLogger('pyvex').setLevel(logging.CRITICAL)
+        
+        # Suppress TraceGuard/taint_se logging - this is the key!
+        logging.getLogger('taint_se').setLevel(logging.CRITICAL)
+        logging.getLogger('__main__').setLevel(logging.CRITICAL)  # For taint_se.py when run as main
+        
+        # Also suppress the specific logger used in taint_se.py
+        import sys
+        sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
+        try:
+            # Try to import and get the actual logger from taint_se
+            import taint_se
+            if hasattr(taint_se, 'my_logger'):
+                taint_se.my_logger.setLevel(logging.CRITICAL)
+        except ImportError:
+            pass
+        
+    def _generate_report(self, results):
+        # Override to suppress the report output
+        pass
 
 class EvaluationRunner:
     """Runs multiple benchmarks and aggregates results for thesis evaluation"""
@@ -19,10 +72,11 @@ class EvaluationRunner:
         self._setup_output_directory()
         
     def _setup_logging(self):
-        """Setup logging"""
+        """Setup minimal logging"""
+        # Only log errors and critical issues
         logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s'
+            level=logging.ERROR,
+            format='%(levelname)s: %(message)s'
         )
         self.logger = logging.getLogger(__name__)
     
@@ -31,7 +85,6 @@ class EvaluationRunner:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.eval_dir = Path("evaluation_results") / f"eval_{timestamp}"
         self.eval_dir.mkdir(parents=True, exist_ok=True)
-        self.logger.info(f"Evaluation results will be saved to: {self.eval_dir}")
     
     def _discover_test_programs(self) -> List[str]:
         """Discover test programs in benchmark/test_programs directory"""
@@ -43,28 +96,32 @@ class EvaluationRunner:
                 if file_path.is_file() and not file_path.suffix:
                     programs.append(str(file_path))
         else:
-            self.logger.warning(f"Test programs directory not found: {test_programs_dir}")
+            print(f"⚠️  Test programs directory not found: {test_programs_dir}")
         
         programs = sorted(programs)
-        self.logger.info(f"Found {len(programs)} test programs: {[Path(p).name for p in programs]}")
+        print(f"📁 Found {len(programs)} test programs: {[Path(p).name for p in programs]}")
         return programs
     
     def run_multiple_benchmarks(self, binary_path: str) -> Dict[str, List[Dict]]:
         """Run multiple benchmark iterations for a single program"""
         program_name = Path(binary_path).stem
-        self.logger.info(f"Running {self.num_runs} iterations for {program_name}")
         
         results = {
             'traceguard': [],
             'classical': []
         }
         
-        runner = BenchmarkRunner(binary_path, self.timeout)
+        # Create progress bar for this program
+        progress = ProgressBar(
+            self.num_runs, 
+            prefix=f'{program_name:20}',
+            length=30
+        )
+        
         for run_num in range(self.num_runs):
-            self.logger.info(f"  Run {run_num + 1}/{self.num_runs}")
-            
             try:
-                # Run single benchmark
+                # Run single benchmark with quiet runner
+                runner = QuietBenchmarkRunner(binary_path, self.timeout)
                 run_results = runner.run_comparison()
                 
                 # Convert BenchmarkResult to dict and store
@@ -82,14 +139,18 @@ class EvaluationRunner:
                     }
                     results[approach].append(result_dict)
                 
-                # Brief progress update
-                tg_time = run_results['traceguard'].execution_time
-                cl_time = run_results['classical'].execution_time
-                self.logger.info(f"    TraceGuard: {tg_time:.2f}s, Classical: {cl_time:.2f}s")
+                # Update progress with timing info
+                if run_results['traceguard'].success and run_results['classical'].success:
+                    tg_time = run_results['traceguard'].execution_time
+                    cl_time = run_results['classical'].execution_time
+                    suffix = f"TG:{tg_time:.1f}s CL:{cl_time:.1f}s"
+                else:
+                    suffix = "Error occurred"
+                
+                progress.update(run_num + 1, suffix)
                 
             except Exception as e:
-                self.logger.error(f"Failed run {run_num + 1}: {e}")
-                # Add failed results
+                # Add failed results and continue
                 for approach in ['traceguard', 'classical']:
                     results[approach].append({
                         'run_number': run_num + 1,
@@ -102,6 +163,8 @@ class EvaluationRunner:
                         'memory_usage_mb': 0,
                         'error_message': str(e)
                     })
+                
+                progress.update(run_num + 1, f"FAILED: {str(e)[:20]}")
         
         return results
     
@@ -113,7 +176,7 @@ class EvaluationRunner:
             successful_runs = [r for r in runs if r['success']]
             
             if not successful_runs:
-                self.logger.warning(f"No successful runs for {approach}")
+                print(f"⚠️  No successful runs for {approach}")
                 continue
             
             # Extract metrics
@@ -173,8 +236,6 @@ class EvaluationRunner:
         
         with open(agg_file, 'w') as f:
             json.dump(agg_serializable, f, indent=2)
-        
-        self.logger.info(f"Results saved: {raw_file} and {agg_file}")
     
     def generate_comparison_report(self, program_name: str, aggregated: Dict):
         """Generate text comparison report"""
@@ -262,8 +323,6 @@ class EvaluationRunner:
         plot_file = self.eval_dir / f"{program_name}_comparison.png"
         plt.savefig(plot_file, dpi=300, bbox_inches='tight')
         plt.close()
-        
-        self.logger.info(f"Plot saved: {plot_file}")
     
     def run_evaluation(self, programs: List[str] = []):
         """Run complete evaluation on multiple programs"""
@@ -271,16 +330,20 @@ class EvaluationRunner:
             programs = self._discover_test_programs()
         
         if not programs:
-            self.logger.error("No test programs found!")
+            print("❌ No test programs found!")
             return
         
-        self.logger.info(f"Starting evaluation of {len(programs)} programs with {self.num_runs} runs each")
+        print(f"\n🚀 Starting evaluation of {len(programs)} programs with {self.num_runs} runs each")
+        print(f"⏱️  Timeout per run: {self.timeout}s")
+        print(f"📁 Results will be saved to: {self.eval_dir}")
+        print(f"{'='*80}")
         
         all_reports = []
+        start_time = time.time()
         
         for i, binary_path in enumerate(programs, 1):
             program_name = Path(binary_path).stem
-            self.logger.info(f"\n[{i}/{len(programs)}] Evaluating {program_name}")
+            print(f"\n[{i}/{len(programs)}] {program_name}")
             
             try:
                 # Run multiple benchmarks
@@ -295,16 +358,22 @@ class EvaluationRunner:
                 # Generate report
                 report = self.generate_comparison_report(program_name, aggregated)
                 all_reports.append(report)
-                print("\n" + report)
+                
+                # Show quick summary
+                if 'traceguard' in aggregated and 'classical' in aggregated:
+                    tg = aggregated['traceguard']
+                    cl = aggregated['classical']
+                    improvement = ((cl['mean_execution_time'] - tg['mean_execution_time']) / cl['mean_execution_time']) * 100
+                    print(f"   ⚡ Speed: {improvement:+.1f}% | 🎯 Vulns: {tg['mean_vulnerabilities']:.0f} | ✅ Success: {tg['success_rate']:.0%}")
                 
                 # Generate plot
                 try:
                     self.generate_simple_plot(program_name, aggregated)
                 except Exception as e:
-                    self.logger.warning(f"Failed to generate plot for {program_name}: {e}")
+                    print(f"   ⚠️  Plot generation failed: {e}")
                 
             except Exception as e:
-                self.logger.error(f"Failed to evaluate {program_name}: {e}")
+                print(f"   ❌ Failed: {e}")
                 continue
         
         # Save combined report
@@ -313,8 +382,12 @@ class EvaluationRunner:
         with open(report_file, 'w') as f:
             f.write(combined_report)
         
-        self.logger.info(f"\nEvaluation complete! Results saved to: {self.eval_dir}")
-        self.logger.info(f"Summary report: {report_file}")
+        elapsed_time = time.time() - start_time
+        print(f"\n{'='*80}")
+        print(f"🎉 Evaluation complete! Total time: {elapsed_time/60:.1f} minutes")
+        print(f"📊 Results saved to: {self.eval_dir}")
+        print(f"📝 Summary report: {report_file}")
+        print(f"{'='*80}")
 
 def main():
     parser = argparse.ArgumentParser(description="Multi-Run TraceGuard Evaluation")
@@ -329,7 +402,7 @@ def main():
     
     # Run evaluation
     evaluator = EvaluationRunner(num_runs=args.runs, timeout=args.timeout)
-    evaluator.run_evaluation(args.programs)
+    evaluator.run_evaluation(args.programs or [])
 
 if __name__ == "__main__":
     main()

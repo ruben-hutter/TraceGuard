@@ -1,0 +1,13 @@
+// test_many_functions.c meta file
+void dummy_func_1();
+void dummy_func_2();
+void dummy_func_3();
+void dummy_func_4();
+void dummy_func_5();
+void dummy_func_6();
+void dummy_func_7();
+void dummy_func_8();
+void dummy_func_9();
+void dummy_func_10();
+void process_untainted_data(int value);
+void hidden_vulnerability(char *tainted_input);

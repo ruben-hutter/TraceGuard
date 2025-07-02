@@ -1,0 +1,4 @@
+// test_state_explosion.c meta file
+void create_many_states(int x);
+void more_branching(int y);
+void critical_vulnerability(char *tainted);

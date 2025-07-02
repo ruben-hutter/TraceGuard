@@ -1,0 +1,3 @@
+// test_conditional_explosion.c meta file
+void complex_conditions(int a, int b, int c, int d);
+void buffer_overflow_vuln(char *user_data);

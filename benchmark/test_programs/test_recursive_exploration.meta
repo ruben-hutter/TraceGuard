@@ -1,0 +1,5 @@
+// test_recursive_exploration.c meta file
+int fibonacci_untainted(int n);
+void factorial_untainted(int n);
+void deep_recursion_untainted(int depth);
+void vulnerable_with_tainted_data(char *input);

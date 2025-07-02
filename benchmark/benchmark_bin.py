@@ -37,23 +37,23 @@ class BenchmarkRunner:
     def __init__(self, binary_path: str, timeout: int = 120):
         self.binary_path = binary_path
         self.timeout = timeout
-        self.setup_logging()
-        self.setup_output_directory()
+        self._setup_logging()
+        self._setup_output_directory()
 
-    def setup_logging(self):
+    def _setup_logging(self):
         """Configure logging"""
         logging.basicConfig(
             level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
         )
         self.logger = logging.getLogger(__name__)
 
-    def setup_output_directory(self):
+    def _setup_output_directory(self):
         """Create output directory for benchmark results"""
         self.results_dir = Path(__file__).parent / "results"
         self.results_dir.mkdir(exist_ok=True)
         self.logger.info(f"Results will be saved to: {self.results_dir}")
 
-    def run_traceguard(self) -> BenchmarkResult:
+    def run_traceguard(self, quite) -> BenchmarkResult:
         """Run TraceGuard analysis using direct module import"""
         self.logger.info("Running TraceGuard analysis...")
 
@@ -71,11 +71,12 @@ class BenchmarkRunner:
                 "meta_file": None,
                 "show_libc_prints": False,
                 "show_syscall_prints": False,
+                "quite": quite,
             }
 
             # Run analysis
             trace_guard = TraceGuard(binary_path=self.binary_path, args=args)
-            analysis_result = trace_guard.run_analysis()
+            analysis_result = trace_guard.run_analysis(timeout=self.timeout)
 
             # Convert AnalysisResult to BenchmarkResult
             return BenchmarkResult(
@@ -108,6 +109,15 @@ class BenchmarkRunner:
                 error_message=str(e),
             )
 
+    def _get_memory_usage(self):
+        """Get current memory usage in MB"""
+        try:
+            import psutil
+            process = psutil.Process()
+            return process.memory_info().rss / 1024 / 1024
+        except ImportError:
+            return 0.0
+
     def run_classical_angr(self) -> BenchmarkResult:
         """Run classical Angr analysis"""
         self.logger.info("Running Classical Angr analysis...")
@@ -129,7 +139,7 @@ class BenchmarkRunner:
             simgr = proj.factory.simulation_manager(state, save_unconstrained=True)
 
             # Add exploration techniques for fair comparison
-            simgr.use_technique(angr.exploration_techniques.LengthLimiter(1000))
+            simgr.use_technique(angr.exploration_techniques.LengthLimiter(100))
 
             # Build CFG for LoopSeer
             try:
@@ -152,7 +162,7 @@ class BenchmarkRunner:
             self.logger.info("Starting classical Angr exploration...")
 
             # Run exploration with timeout and step limit
-            max_steps = 10000
+            max_steps = 1000
 
             while (
                 simgr.active
@@ -179,8 +189,6 @@ class BenchmarkRunner:
                             time_to_first_vuln = time.time() - vuln_start_time
                         new_vulnerabilities += new_vuln_count
                         self.logger.info(f"Found {new_vuln_count} unconstrained states")
-                        # Move to avoid re-counting
-                        simgr.move(from_stash="unconstrained", to_stash="found")
 
                 # Check errored states for potential vulnerabilities
                 if simgr.errored:
@@ -229,7 +237,6 @@ class BenchmarkRunner:
                 + len(simgr.deadended)
                 + len(simgr.errored)
                 + len(simgr.unconstrained)
-                + len(simgr.found)
             )
 
             self.logger.info(f"Classical Angr completed in {execution_time:.2f}s")
@@ -242,6 +249,8 @@ class BenchmarkRunner:
             if (time.time() - start_time) >= self.timeout:
                 self.logger.warning("Classical Angr analysis timed out")
 
+            memory_usage = self._get_memory_usage()
+
             return BenchmarkResult(
                 approach="Classical Angr",
                 success=True,
@@ -250,7 +259,7 @@ class BenchmarkRunner:
                 basic_blocks_covered=len(basic_blocks_covered),
                 vulnerabilities_found=vulnerabilities_found,
                 time_to_first_vuln=time_to_first_vuln,
-                memory_usage_mb=0,  # Could implement memory tracking if needed
+                memory_usage_mb=memory_usage,
                 error_message=None,
             )
 
@@ -272,14 +281,14 @@ class BenchmarkRunner:
                 error_message=str(e),
             )
 
-    def run_comparison(self) -> Dict[str, BenchmarkResult]:
+    def run_comparison(self, quite=True) -> Dict[str, BenchmarkResult]:
         """Run comparison between TraceGuard and Classical Angr"""
         self.logger.info(f"Starting benchmark comparison for {self.binary_path}")
 
         results = {}
 
         # Run TraceGuard
-        traceguard_result = self.run_traceguard()
+        traceguard_result = self.run_traceguard(quite=quite)
         results["traceguard"] = traceguard_result
 
         # Run Classical Angr
@@ -471,7 +480,6 @@ class BenchmarkRunner:
 
         print("\n" + "=" * 60)
 
-        # Save results to JSON
         self._save_results_json(results)
 
     def _save_results_json(self, results: Dict[str, BenchmarkResult]):
@@ -542,7 +550,7 @@ def main():
 
     # Run benchmark
     runner = BenchmarkRunner(args.binary, args.timeout)
-    runner.run_comparison()
+    runner.run_comparison(quite=False)
 
 
 if __name__ == "__main__":
