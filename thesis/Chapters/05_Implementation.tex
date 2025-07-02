@@ -194,7 +194,7 @@ python scripts/taint_se.py <binary_path> [options]
 
 \textbf{Analysis with Visualization:}
 \begin{verbatim}
-python scripts/main.py <binary_path> [options]
+python scripts/trace_guard.py <binary_path> [options]
 \end{verbatim}
 
 The tool supports several command-line options for customizing analysis behavior:
@@ -207,7 +207,7 @@ The tool supports several command-line options for customizing analysis behavior
     \item \texttt{--show-syscall-prints}: Display details for hooked system calls
 \end{itemize}
 
-The \texttt{main.py} entry point includes integration with the Schnauzer visualization framework, enabling interactive exploration of analysis results through graphical representations of call graphs, taint flow patterns, and execution paths.
+The \texttt{trace\_guard.py} entry point includes integration with the Schnauzer visualization framework, enabling interactive exploration of analysis results through graphical representations of call graphs, taint flow patterns, and execution paths.
 
 \subsection{Usage Examples}
 
@@ -230,7 +230,7 @@ python scripts/taint_se.py examples/program5 \
 \textbf{Visualization Mode:}
 \begin{verbatim}
 # Interactive analysis with Schnauzer
-python scripts/main.py examples/program3 --show-libc-prints
+python scripts/trace_guard.py examples/program3 --show-libc-prints
 \end{verbatim}
 
 \subsection{Integration Workflow}
@@ -245,3 +245,17 @@ The tool integrates into existing analysis workflows through a straightforward e
 \end{enumerate}
 
 The analysis process provides comprehensive feedback on function execution patterns, taint flow detection, and exploration effectiveness.
+
+\section{Practical Demonstration}\label{sec:practical_demonstration}
+
+\subsection{Example Program Analysis}
+% Description of the example program and its vulnerabilities
+
+\subsection{TraceGuard Execution and Visualization}
+% Step-by-step walkthrough of running TraceGuard
+
+\subsection{Taint Flow Visualization}
+% Screenshots and explanation of the Schnauzer visualization
+
+\subsection{Analysis Results Interpretation}
+% How to interpret the results and what they tell us about the program
