@@ -23,27 +23,26 @@
 \contentsline {section}{\numberline {4.4}Path Prioritization}{11}{section.29}%
 \contentsline {subsection}{\numberline {4.4.1}Adaptive State Pool Management}{12}{subsection.32}%
 \contentsline {section}{\numberline {4.5}Exploration Depth Control and Vulnerability Probability}{13}{section.33}%
-\contentsline {chapter}{\chapternumberline {5}Implementation}{15}{chapter.35}%
-\contentsline {section}{\numberline {5.1}Tool Architecture and Workflow}{15}{section.36}%
-\contentsline {subsection}{\numberline {5.1.1}Core Components}{15}{subsection.37}%
-\contentsline {subsection}{\numberline {5.1.2}Workflow Overview}{16}{subsection.43}%
-\contentsline {section}{\numberline {5.2}Core Implementation Details}{17}{section.49}%
-\contentsline {subsection}{\numberline {5.2.1}TaintAnalyzer Class Architecture}{17}{subsection.50}%
-\contentsline {subsection}{\numberline {5.2.2}Function Hooking Strategy}{17}{subsection.51}%
-\contentsline {subsection}{\numberline {5.2.3}Taint Detection and Propagation}{18}{subsection.52}%
-\contentsline {subsection}{\numberline {5.2.4}Custom Exploration Technique}{18}{subsection.57}%
-\contentsline {section}{\numberline {5.3}Architecture Support and Configuration}{19}{section.58}%
-\contentsline {subsection}{\numberline {5.3.1}Multi-Architecture Implementation}{19}{subsection.59}%
-\contentsline {subsection}{\numberline {5.3.2}Meta File Integration}{19}{subsection.60}%
-\contentsline {section}{\numberline {5.4}Usage and Configuration}{20}{section.61}%
-\contentsline {subsection}{\numberline {5.4.1}Command-Line Interface}{20}{subsection.62}%
+\contentsline {chapter}{\chapternumberline {5}Implementation}{14}{chapter.35}%
+\contentsline {section}{\numberline {5.1}Tool Architecture and Workflow}{14}{section.36}%
+\contentsline {subsection}{\numberline {5.1.1}Core Components}{14}{subsection.37}%
+\contentsline {subsection}{\numberline {5.1.2}Workflow Overview}{15}{subsection.43}%
+\contentsline {section}{\numberline {5.2}Core Implementation Details}{16}{section.49}%
+\contentsline {subsection}{\numberline {5.2.1}TraceGuard Class Architecture}{16}{subsection.50}%
+\contentsline {subsection}{\numberline {5.2.2}Function Hooking Strategy}{16}{subsection.51}%
+\contentsline {subsection}{\numberline {5.2.3}Taint Detection and Propagation}{17}{subsection.52}%
+\contentsline {subsection}{\numberline {5.2.4}Custom Exploration Technique}{17}{subsection.57}%
+\contentsline {section}{\numberline {5.3}Architecture Support and Configuration}{18}{section.58}%
+\contentsline {subsection}{\numberline {5.3.1}Multi-Architecture Implementation}{18}{subsection.59}%
+\contentsline {subsection}{\numberline {5.3.2}Meta File Integration}{18}{subsection.60}%
+\contentsline {section}{\numberline {5.4}Usage and Configuration}{19}{section.61}%
+\contentsline {subsection}{\numberline {5.4.1}Command-Line Interface}{19}{subsection.62}%
 \contentsline {subsection}{\numberline {5.4.2}Usage Examples}{20}{subsection.63}%
-\contentsline {subsection}{\numberline {5.4.3}Integration Workflow}{21}{subsection.64}%
-\contentsline {section}{\numberline {5.5}Practical Demonstration}{21}{section.69}%
-\contentsline {subsection}{\numberline {5.5.1}Example Program Analysis}{21}{subsection.70}%
-\contentsline {subsection}{\numberline {5.5.2}TraceGuard Execution and Visualization}{21}{subsection.71}%
-\contentsline {subsection}{\numberline {5.5.3}Taint Flow Visualization}{21}{subsection.72}%
-\contentsline {subsection}{\numberline {5.5.4}Analysis Results Interpretation}{21}{subsection.73}%
+\contentsline {subsection}{\numberline {5.4.3}Integration Workflow}{20}{subsection.64}%
+\contentsline {section}{\numberline {5.5}Practical Example}{20}{section.69}%
+\contentsline {subsection}{\numberline {5.5.1}TraceGuard Execution}{20}{subsection.70}%
+\contentsline {subsection}{\numberline {5.5.2}Analysis Results}{21}{subsection.71}%
+\contentsline {subsection}{\numberline {5.5.3}Interactive Visualization}{21}{subsection.72}%
 \contentsline {chapter}{\chapternumberline {6}Evaluation}{22}{chapter.74}%
 \contentsline {section}{\numberline {6.1}Experimental Design}{22}{section.75}%
 \contentsline {subsection}{\numberline {6.1.1}Research Questions}{22}{subsection.76}%
@@ -60,8 +59,14 @@
 \contentsline {subsection}{\numberline {6.4.1}Limitations and Practical Considerations}{26}{subsection.94}%
 \contentsline {chapter}{\chapternumberline {7}Conclusion}{27}{chapter.95}%
 \contentsline {chapter}{\chapternumberline {8}Future Work}{28}{chapter.96}%
-\contentsline {chapter}{\chapternumberline {9}Usage of AI}{29}{chapter.97}%
+\contentsline {section}{\numberline {8.1}Enhanced Configuration and Usability}{28}{section.97}%
+\contentsline {section}{\numberline {8.2}Architecture and Platform Extensions}{28}{section.98}%
+\contentsline {section}{\numberline {8.3}Scalability and Real-World Applications}{29}{section.99}%
+\contentsline {section}{\numberline {8.4}Input Source Expansion}{29}{section.100}%
+\contentsline {section}{\numberline {8.5}Performance Optimization}{29}{section.101}%
+\contentsline {chapter}{\chapternumberline {9}Usage of AI}{30}{chapter.102}%
 \vspace {2em}
-\contentsline {chapter}{Bibliography}{30}{appendix*.98}%
-\contentsline {appendix}{\chapternumberline {A}Appendix}{31}{appendix.99}%
+\contentsline {chapter}{Bibliography}{31}{appendix*.103}%
+\contentsline {appendix}{\chapternumberline {A}Appendix}{32}{appendix.104}%
+\contentsline {section}{\numberline {A.1}State Explosion Test Program Source Code}{32}{section.105}%
 \vspace {2em}

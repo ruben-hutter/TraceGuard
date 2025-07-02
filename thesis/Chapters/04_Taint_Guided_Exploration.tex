@@ -19,9 +19,9 @@ TraceGuard operates as a specialized program built on the Angr framework that tr
 
 \vspace{1em}
 
-Throughout the following algorithms, we use configurable parameters to maintain generality: $\alpha_{input}$ represents the score bonus for input function interactions, $\beta_{tainted}$ denotes the bonus for execution within tainted functions, $\gamma_{penalty}$ specifies the depth penalty multiplication factor, $\delta_{threshold}$ defines the depth threshold for penalty application, $\sigma_{min}$ sets the minimum exploration score, $\tau_{high}$ and $\tau_{medium}$ establish the priority classification thresholds, and $k$ determines the maximum number of active states. In our implementation, these parameters are set to $\alpha_{input} = 5.0$, $\beta_{tainted} = 3.0$, $\gamma_{penalty} = 0.95$, $\delta_{threshold} = 200$, $\sigma_{min} = 1.0$, $\tau_{high} = 6.0$, $\tau_{medium} = 2.0$, and $k = 15$.
+Throughout the following algorithms, we use configurable parameters to maintain generality: $\alpha_{input}$ represents the score bonus for input function interactions, $\beta_{tainted}$ denotes the bonus for execution within tainted functions, $\sigma_{min}$ sets the minimum exploration score, $\tau_{high}$ and $\tau_{medium}$ establish the priority classification thresholds, and $k$ determines the maximum number of active states. Additionally, progressive depth penalties are applied using factors $\gamma_{high}, \gamma_{medium}$ for corresponding depth thresholds $\delta_{high}, \delta_{medium}$. In our implementation, these parameters are set to $\alpha_{input} = 20.0$, $\beta_{tainted} = 3.0$, $\sigma_{min} = 1.0$, $\tau_{high} = 6.0$, $\tau_{medium} = 2.0$, and $k = 15$. The depth penalties are $\gamma_{high} = 0.95$ for $\delta_{high} = 200$, and $\gamma_{medium} = 0.90$ for $\delta_{medium} = 400$.
 
-\section{Taint Source Recognition}\label{sec:taint_source_recognition}
+\section{Taint Source Recognition}
 
 TraceGuard identifies taint sources by hooking functions during program analysis. This hook-based approach enables runtime detection of external data entry points without requiring complex static analysis.
 
@@ -46,7 +46,7 @@ The system uses two types of hooks: input function hooks that immediately mark d
 
 Input functions receive special treatment because they represent the primary vectors for external data entry. When these functions are called, the system automatically creates tainted symbolic data and registers the associated memory regions as containing potentially malicious content.
 
-\section{Dynamic Taint Tracking}\label{sec:dynamic_taint_tracking}
+\section{Dynamic Taint Tracking}
 
 TraceGuard tracks taint propagation through two complementary mechanisms: symbolic variable naming and memory region mapping. This approach ensures taint information persists across function calls and memory operations.
 
@@ -87,9 +87,7 @@ Symbolic variable naming creates a persistent taint identifier that follows data
     \end{algorithmic}
 \end{algorithm}
 
-Additionally, memory region tracking maintains a mapping of tainted buffer addresses and sizes, enabling taint detection when pointers reference previously tainted memory locations.
-
-\section{Path Prioritization}\label{sec:path_prioritization}
+\section{Path Prioritization}
 
 TraceGuard implements a three-tier prioritization system that classifies symbolic execution states based on their calculated taint scores. This classification determines exploration order to focus computational resources on security-relevant paths.
 
@@ -143,7 +141,7 @@ A critical component of TraceGuard's practical viability lies in its adaptive st
 
 This adaptive approach ensures that TraceGuard maintains bounded computational requirements while maximizing the security relevance of explored paths, addressing both the theoretical challenge of path explosion and the practical constraints of finite computational resources.
 
-\section{Exploration Depth Control and Vulnerability Probability}\label{sec:exploration_depth_control}
+\section{Exploration Depth Control and Vulnerability Probability}
 
 TraceGuard prevents path explosion through multiple complementary techniques that limit exploration depth while maintaining sufficient coverage for vulnerability discovery. A fundamental principle underlying this approach is the inverse relationship between execution depth and vulnerability probability.
 

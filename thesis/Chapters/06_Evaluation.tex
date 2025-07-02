@@ -56,7 +56,7 @@ Each test program contains known vulnerabilities with well-defined taint flow pa
 
 \textbf{Perfect Detection Rate:} TraceGuard demonstrates exceptional vulnerability detection reliability, achieving a 100\% detection rate across all test scenarios and execution runs. This result directly addresses RQ1 (Section~\ref{subsec:research_questions}), confirming that taint-guided exploration maintains detection effectiveness while optimizing exploration strategy.
 
-Table~\ref{tab:detection_results} summarizes the vulnerability detection performance. TraceGuard consistently identified all embedded vulnerabilities across 70 total execution runs (7 programs × 10 runs each), demonstrating robust detection reliability and, in the most challenging scenario, superior performance compared to classical symbolic execution.
+Table~\ref{tab:detection_results} summarizes the vulnerability detection performance. TraceGuard consistently identified all embedded vulnerabilities across 70 total execution runs (7 programs × 10 runs each), demonstrating robust detection reliability and, in the most challenging scenario, significantly improved performance compared to classical symbolic execution.
 
 \begin{table}[htbp]
 \centering
@@ -131,7 +131,7 @@ test\_state\_explosion & 13.0 $\pm$ 0.0 & 35.3 $\pm$ 0.5 & 36.8\% \\
 \end{tabular}
 \end{table}
 
-\textbf{Quality over Quantity:} The coverage analysis reveals that TraceGuard's reduced exploration is not a limitation but rather a strategic advantage. In the most challenging scenario (\texttt{test\_state\_explosion}), TraceGuard explores only 36.8\% of the basic blocks covered by classical execution yet finds $5 \times$ more vulnerabilities, demonstrating the effectiveness of focused, security-oriented exploration.
+\textbf{Quality over Quantity:} The coverage analysis reveals that TraceGuard's reduced exploration is not a limitation but rather a strategic advantage. In the most challenging scenario (\texttt{test\_state\_explosion}), TraceGuard explores only 36.8\% to 75.0\% of the basic blocks while maintaining significantly improved vulnerability detection, demonstrating the advantage of security-focused exploration.
 
 This consistent performance across programs with varying complexity---from simple linear programs to complex recursive and multi-function scenarios---directly addresses RQ4 (Section~\ref{subsec:research_questions}) by demonstrating that the taint-guided approach scales effectively across diverse program characteristics and control flow patterns.
 

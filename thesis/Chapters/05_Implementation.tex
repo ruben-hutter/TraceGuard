@@ -1,6 +1,5 @@
 % !TEX root = ../Thesis.tex
 \chapter{Implementation}
-\label{ch:implementation}
 
 This chapter presents the practical implementation of the taint-guided symbolic execution approach described in Chapter~\ref{ch:taint_guided_exploration}. TraceGuard is built using Python and integrates with the Angr binary analysis framework to provide taint-aware symbolic execution capabilities. TraceGuard demonstrates how dynamic taint analysis can be effectively integrated with symbolic execution to achieve security-focused path prioritization, directly implementing the theoretical algorithms presented in the previous chapter.
 
@@ -70,11 +69,11 @@ TraceGuard's analysis workflow implements the conceptual approach outlined in Ch
 
 \section{Core Implementation Details}\label{sec:core_implementation}
 
-The core implementation centers around the \texttt{TaintAnalyzer} class, which coordinates all analysis activities and maintains the necessary state for comprehensive taint tracking throughout symbolic execution.
+The core implementation centers around the \texttt{TraceGuard} class, which coordinates all analysis activities and maintains the necessary state for comprehensive taint tracking throughout symbolic execution.
 
-\subsection{TaintAnalyzer Class Architecture}
+\subsection{TraceGuard Class Architecture}
 
-The \texttt{TaintAnalyzer} class serves as the central coordinator for all analysis activities, encapsulating the complete workflow from project initialization to result reporting. The class maintains several key attributes that enable comprehensive analysis:
+The \texttt{TraceGuard} class serves as the central coordinator for all analysis activities, encapsulating the complete workflow from project initialization to result reporting. The class maintains several key attributes that enable comprehensive analysis:
 
 \begin{itemize}
     \item \texttt{project}: The Angr project instance managing the binary analysis
@@ -106,7 +105,7 @@ TraceGuard implements comprehensive function hooking through two specialized hoo
     \item Execute functions normally while monitoring taint flow
 \end{itemize}
 
-The hook implementation leverages Angr's \texttt{SimProcedure} framework while adding specialized taint analysis logic. Architecture-specific parameter handling ensures accurate taint detection across AMD64 (register-based) and x86 (stack-based) calling conventions.
+The hook implementation leverages Angr's \texttt{SimProcedure} framework while adding specialized taint analysis logic. Architecture-specific parameter handling facilitates accurate taint detection across AMD64 (register-based) and x86 (stack-based) calling conventions.
 
 \subsection{Taint Detection and Propagation}
 
@@ -150,7 +149,7 @@ The \texttt{TaintGuidedExploration} class extends Angr's \texttt{ExplorationTech
 
 \textbf{Performance Monitoring:} The technique maintains comprehensive statistics on tainted versus untainted state exploration, providing insights into the effectiveness of the prioritization strategy and enabling runtime analysis of exploration patterns.
 
-\section{Architecture Support and Configuration}\label{sec:architecture_support}
+\section{Architecture Support and Configuration}
 
 TraceGuard provides configurable support for multiple architectures and includes mechanisms for customizing analysis behavior through meta files and configuration options.
 
@@ -158,9 +157,9 @@ TraceGuard provides configurable support for multiple architectures and includes
 
 TraceGuard includes support for both AMD64 and x86 architectures through configurable parameter analysis systems, though the implementation has been primarily tested and validated on AMD64 systems:
 
-\textbf{AMD64 Support:} Fully implements the System V calling convention with register-based parameter passing using \texttt{rdi}, \texttt{rsi}, \texttt{rdx}, \texttt{rcx}, \texttt{r8}, and \texttt{r9}. The system correctly handles both register and stack-based parameters for functions with many arguments.
+\textbf{AMD64 Support:} Fully implements the System V calling convention with register-based parameter passing using \texttt{rdi}, \texttt{rsi}, \texttt{rdx}, \texttt{rcx}, \texttt{r8}, and \texttt{r9}. The system is designed to handle both register and stack-based parameters for functions with many arguments.
 
-\textbf{x86 Support:} Implements stack-based parameter passing with appropriate memory offset calculations. The system adjusts stack frame analysis to correctly identify function parameters in the x86 calling convention. However, this implementation has not been extensively tested and may require further validation for production use.
+\textbf{x86 Support:} Implements stack-based parameter passing with appropriate memory offset calculations. The system adjusts stack frame analysis to identify function parameters in the x86 calling convention. However, critical taint introduction routines for common input functions (e.g., \texttt{fgets}, \texttt{scanf}) are currently implemented only for AMD64, limiting full taint propagation on x86 architectures.
 
 Architecture detection occurs automatically during project initialization, ensuring appropriate calling convention configuration without manual intervention.
 
