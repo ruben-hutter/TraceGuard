@@ -5,10 +5,5 @@ description = "Add your description here"
 requires-python = ">=3.13"
 dependencies = [
     "angr>=9.2.162",
-    "claripy>=9.2.162",
     "matplotlib>=3.10.3",
-    "numpy>=2.3.1",
-    "pandas>=2.3.0",
-    "scipy>=1.16.0",
-    "seaborn>=0.13.2",
 ]

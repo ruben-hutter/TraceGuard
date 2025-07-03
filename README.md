@@ -6,7 +6,7 @@ A research tool implementing taint-guided symbolic execution to optimize binary 
 
 This project addresses the path explosion problem in symbolic execution by combining dynamic taint analysis with symbolic execution. The approach tracks taint propagation from input sources and uses this information to guide symbolic execution toward functions that process potentially malicious data, significantly reducing analysis time while maintaining security coverage.
 
-**Research Context**: This implementation is part of a Bachelor's thesis in Computer Science at the University of Basel, investigating novel approaches to optimize symbolic execution for security analysis.
+**Research Context**: This implementation is part of my Bachelor's thesis in Computer Science at the University of Basel, investigating novel approaches to optimize symbolic execution for security analysis.
 
 ## Key Features
 
@@ -14,6 +14,7 @@ This project addresses the path explosion problem in symbolic execution by combi
 - **Selective function execution**: Reduces analysis overhead by skipping functions that don't process tainted data
 - **Multi-architecture support**: Works with AMD64 and X86 binaries
 - **Interactive visualization**: Integrates with Schnauzer for real-time analysis exploration
+- **Comprehensive benchmarking**: Includes dedicated benchmarking suite for performance evaluation
 - **Flexible configuration**: Supports custom taint sources and analysis parameters
 
 ## Quick Start
@@ -27,25 +28,37 @@ This project addresses the path explosion problem in symbolic execution by combi
 ### Installation
 
 #### Using uv (Recommended)
+
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd taint-guided-se
+git clone https://github.com/ruben-hutter/TraceGuard.git
+cd TraceGuard
 
-# Install dependencies
+# Install dependencies for main project
 uv sync
+
+# Install benchmark dependencies (optional)
+cd benchmark
+uv sync
+cd ..
 ```
 
 #### Using pip
+
 ```bash
 # Clone and set up virtual environment
-git clone <repository-url>
-cd taint-guided-se
+git clone https://github.com/ruben-hutter/TraceGuard.git
+cd TraceGuard
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# Install dependencies
-pip install angr>=9.2.146 claripy>=9.2.146 matplotlib>=3.10.1 schnauzer>=0.1.1
+# Install main project dependencies
+pip install -r requirements.txt
+
+# Install benchmark dependencies (optional)
+cd benchmark
+pip install -r requirements.txt
+cd ..
 ```
 
 ### Basic Usage
@@ -54,10 +67,13 @@ pip install angr>=9.2.146 claripy>=9.2.146 matplotlib>=3.10.1 schnauzer>=0.1.1
 # Build example programs
 make
 
-# Run analysis with visualization
-python scripts/main.py examples/program1
+# Run analysis with visualization (orchestrator)
+python scripts/trace_guard.py examples/program1
 
-# Run analysis without visualization
+# Run analysis with visualization (terminal entry point)
+python scripts/trace_guard.py examples/program1 --verbose
+
+# Run analysis without visualization (direct engine)
 python scripts/taint_se.py examples/program1 --verbose
 ```
 
@@ -70,97 +86,161 @@ The tool will automatically:
 ## Repository Structure
 
 ```
-├── examples/          # Test programs demonstrating various taint scenarios
-│   ├── *.c           # C source files for testing
-│   └── *.meta        # Function signature metadata
-├── scripts/          # Main analysis implementation
-│   ├── main.py       # Orchestrator script with visualization
-│   ├── taint_se.py   # Core taint analysis engine
-│   └── README.md     # Detailed technical documentation
-├── thesis/           # LaTeX thesis documentation
-├── pyproject.toml    # Project dependencies and metadata
-└── Makefile          # Build system for examples
+├── examples/              # Test programs demonstrating various taint scenarios
+│   ├── *.c               # C source files for testing
+│   └── *.meta            # Function signature metadata
+├── scripts/              # Main analysis implementation
+│   ├── main.py           # Orchestrator script with visualization
+│   ├── trace_guard.py    # Terminal entry point with visualization
+│   ├── taint_se.py       # Core taint analysis engine (TraceGuard class)
+│   ├── taint_exploration.py # Custom Angr exploration technique
+│   ├── constants.py      # Configuration and architecture definitions
+│   ├── meta.py          # Meta file parsing utilities
+│   ├── visualize.py     # Schnauzer integration
+│   └── README.md        # Detailed technical documentation
+├── benchmark/            # Benchmarking and evaluation suite
+│   ├── benchmark_bin.py  # Individual benchmark runner
+│   ├── evaluation_runner.py # Batch evaluation for thesis
+│   ├── test_programs/    # Benchmark test programs
+│   ├── pyproject.toml    # Benchmark-specific dependencies
+│   └── Makefile         # Build system for benchmark programs
+├── thesis/              # LaTeX thesis documentation
+├── pyproject.toml       # Main project dependencies and uv workspace
+└── Makefile            # Build system for examples
 ```
 
 ## How It Works
 
 The tool implements a three-phase approach:
 
-1. **Taint Source Identification**: Automatically identifies input functions (fgets, scanf, read, etc.) as taint sources
-2. **Dynamic Taint Tracking**: Monitors taint propagation through function calls and memory operations  
-3. **Guided Symbolic Execution**: Prioritizes exploration of execution paths that process tainted data
+1. **Static Analysis Phase**: Constructs control flow graph and identifies potential taint sources
+2. **Dynamic Taint Tracking**: Monitors data flow from input functions and propagates taint through function calls
+3. **Guided Symbolic Execution**: Prioritizes exploration of paths that process tainted data while maintaining comprehensive coverage
 
-This approach significantly reduces the state space that symbolic execution must explore while maintaining comprehensive coverage of security-relevant code paths.
+### Key Components
 
-## Example Programs
+- **TraceGuard Class**: Main analysis engine implementing the complete taint-guided symbolic execution workflow
+- **TaintGuidedExploration**: Custom Angr exploration technique for intelligent state prioritization
+- **Function Hooking System**: Monitors input functions (scanf, fgets, read, etc.) to track taint propagation
+- **Visualization Integration**: Real-time analysis visualization through Schnauzer web interface
 
-The `examples/` directory contains test programs of increasing complexity:
+## Performance Evaluation
 
-- **program1.c**: Simple linear taint flow
-- **program3.c**: Complex multi-input scenarios with deep call chains
-- **program5.c**: Advanced control flow and conditional execution
+TraceGuard includes a comprehensive benchmarking suite for evaluating performance against classical symbolic execution:
 
-Each program includes corresponding `.meta` files specifying function signatures for optimal analysis.
+```bash
+# Run individual benchmark comparison
+cd benchmark
+python benchmark_bin.py test_programs/program1
+
+# Run batch evaluation for thesis
+python evaluation_runner.py
+
+# Build benchmark test programs
+make
+```
+
+The benchmarking suite provides:
+- **Execution time comparison**: TraceGuard vs classical symbolic execution
+- **State exploration efficiency**: Reduction in states explored while maintaining coverage
+- **Vulnerability detection rates**: Effectiveness at finding security-relevant issues
+- **Statistical analysis**: Multiple runs with aggregated results and confidence intervals
+
+## Configuration Options
+
+### Command Line Arguments
+
+- `--verbose`, `-v`: Enable verbose logging output
+- `--debug`, `-d`: Enable debug-level logging with detailed state information
+- `--meta-file <path>`: Specify custom meta file for function parameter counts
+- `--show-libc-prints`: Show details for hooked libc function calls
+- `--show-syscall-prints`: Show details for hooked system calls
+
+### Meta Files
+
+Function signature metadata files (`.meta`) provide parameter count information for accurate taint tracking:
+
+```c
+// Example: program1.meta
+// Program1 function definitions
+void helper_function(const char *data);
+void process_data(const char *input, const char *fixed);
+void analyze_string(const char *str);
+void untainted_function(const char *fixed_str);
+```
+
+Meta files are automatically detected alongside binaries or can be specified with `--meta-file`.
+
+### Architecture Support
+
+Currently supports:
+- **AMD64**: Full register-based argument tracking (rdi, rsi, rdx, rcx, r8, r9)
+- **X86**: Stack-based argument tracking with return value monitoring (partially supported)
+
+## Development Workflow
+
+### Workspace Structure
+
+The project uses uv workspace management with two main components:
+
+1. **Main Project** (`pyproject.toml`): Core TraceGuard implementation
+2. **Benchmark Suite** (`benchmark/pyproject.toml`): Evaluation and benchmarking tools
+
+### Adding New Features
+
+1. **Taint Sources**: Add function names to `INPUT_FUNCTION_NAMES` in `constants.py`
+2. **Architecture Support**: Extend register mappings in architecture configuration
+3. **Custom Hooks**: Implement new SimProcedures and register in `_setup_hooks()`
+4. **Benchmark Programs**: Add test cases to `benchmark/test_programs/`
+
+### Testing
+
+```bash
+# Test core functionality
+python scripts/taint_se.py examples/program1 --debug
+
+# Test with meta files
+python scripts/taint_se.py examples/program5 --meta-file examples/program5.meta
+
+# Test visualization integration
+python scripts/trace_guard.py examples/program3 --verbose
+
+# Run benchmarks
+cd benchmark && python benchmark_bin.py test_programs/program1
+```
 
 ## Research Applications
 
-This tool is designed for:
+This tool supports various research applications in program analysis:
 
-- **Security researchers** investigating automated vulnerability discovery
-- **Binary analysis** of programs with complex input processing
-- **Academic research** in symbolic execution optimization
-- **Comparative studies** of different program analysis approaches
+- **Vulnerability Discovery**: Focused exploration of security-relevant code paths
+- **Fuzzing Target Identification**: Prioritizing functions for targeted fuzzing campaigns
+- **Code Coverage Analysis**: Understanding which parts of programs process external input
+- **Performance Optimization**: Reducing symbolic execution overhead through intelligent guidance
 
-## Documentation
+## Citation
 
-- **[Technical Documentation](scripts/README.md)**: Comprehensive implementation details, API reference, and troubleshooting
-- **[Thesis Documentation](thesis/)**: Academic background, theoretical foundations, and evaluation results
-- **[Example Programs](examples/)**: Annotated test cases demonstrating different analysis scenarios
+If you use TraceGuard in your research, please cite:
 
-## Performance
-
-Preliminary results show significant improvements over traditional symbolic execution:
-
-- **Reduced state explosion**: 60-80% reduction in explored states for typical programs
-- **Maintained coverage**: Preserves coverage of security-relevant execution paths  
-- **Faster vulnerability discovery**: Finds security issues more quickly by focusing on tainted data flows
-
-*Detailed evaluation results are available in the thesis documentation.*
+```
+[Bachelor's Thesis Citation - To be updated upon completion]
+University of Basel, Computer Science Department
+Taint-Guided Symbolic Execution for Enhanced Binary Analysis
+```
 
 ## Contributing
 
-This project is part of ongoing academic research. Contributions are welcome, particularly:
-
-- Additional test programs and benchmarks
-- Support for new architectures
-- Enhanced taint tracking precision
-- Integration with other analysis frameworks
-
-Please see the [technical documentation](scripts/README.md) for development guidelines.
-
-## Academic Citation
-
-If you use this tool in academic research, please cite:
-
-```
-@mastersthesis{hutter2025taint,
-  title={Taint-Guided Symbolic Execution},
-  author={Ruben Hutter},
-  school={University of Basel},
-  year={2025}
-}
-```
+This is a research project developed as part of a Bachelor's thesis. For questions or collaboration opportunities, please contact the University of Basel Computer Science Department.
 
 ## License
 
-This project is developed as part of academic research at the University of Basel. Please contact the author for licensing information.
+This project is developed for academic research purposes. See thesis documentation for detailed licensing information.
 
-## Contact
+## Known Limitations
 
-- **Author**: Ruben Hutter (ruben.hutter@unibas.ch)
-- **Supervisor**: Prof. Dr. Christopher Scherb
-- **Institution**: University of Basel, Department of Mathematics and Computer Science
+- **Taint Granularity**: Currently tracks taint at function parameter level
+- **Complex Data Structures**: Limited byte-level tracking within nested structures  
+- **Indirect Calls**: Function pointer scenarios may require manual annotation
+- **Solver Complexity**: Performance scales with constraint system complexity
 
----
-
-*This work is part of a Bachelor's thesis investigating novel approaches to optimize symbolic execution for security analysis. The research aims to address the fundamental path explosion problem in symbolic execution while maintaining comprehensive security coverage.*
+For technical details, implementation notes, and API documentation, see [scripts/README.md](scripts/README.md).
