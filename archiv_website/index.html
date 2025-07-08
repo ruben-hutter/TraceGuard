@@ -1,0 +1,68 @@
+<!DOCTYPE HTML>
+
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+		<title> Computing the Distribution of Computations for Named Function Networking Using Name Based Routing </title>
+		<meta content="">
+		<link  rel="stylesheet" type="text/css" href="style.css">
+		<script language="JavaScript" src = "index.js"></script>
+	</head>
+	<body class  = "gbg" onload="loadAbstract()">
+		<div>
+			<h1> Computing the Distribution of Computations for Named Function Networking Using Name Based Routing </h1>
+		</div>
+		<div class = "bg">
+			<div class = "filled">
+				<div class ="title"> Bachelor Thesis </div>
+				<div class ="title"> Ruben Hutter </div>
+			</div>
+			<div class = "filled">
+				<button class = "button" onmouseover="mouseOver(this)" onmouseout="mouseOut(this)" onmousedown = "loadAbstract()">  Abstract </button>
+				<button class = "button" onmouseover="mouseOver(this)" onmouseout="mouseOut(this)" onmousedown = "loadThesis()">  Thesis </button>
+				<button class = "button" onmouseover="mouseOver(this)" onmouseout="mouseOut(this)" onmousedown = "loadSoftware()">  Software </button>
+				<button class = "button" onmouseover="mouseOver(this)" onmouseout="mouseOut(this)" onmousedown = "loadDocumentation()">  Paper </button>
+			</div>
+			<div class = "filled">
+				<img src="data/ccnl-lite-nfn.png" alt="CCN-NFN-logo">
+			</div>
+			<div id = "content">
+				<div id = "abstract">
+					<h2> Abstract </h2>
+					<p>
+In Named Function Networking (NFN) &#955;-calculus enables a programmatic way of inter-
+acting with an information-centric network (ICN) as a single computer.
+To enable the ICN to understand and handle expressions written in the &#955;-calculus, which
+are encoded in names, NFN proposes the integration of an abstract machine that couples
+&#946;-reduction with ICN forwarding primitives, and uses ICN as a memory substrate.
+The goals of this project are, first to integrate a Call-By-Name Abstract Machine into
+the existing CCN-lite implementation. Second, to couple its operation with a forwarding
+strategy and thereby combining resolution-distribution of &#955;-expressions across the network.
+In the end a NFN capable ICN network will be able to evaluate &#955;-functions and optimize
+the location of the evaluation in the network.
+Extensions for parallel computing and better load distribution inside the network are devel-
+oped to provide a stable and fast execution process of computations.
+For testing, native and Omnet experiments are conducted. The functionality of the NFN is
+proven in different test scenarios.
+					</p>
+				</div>
+				<div id = "thesis">
+					<h2> Thesis </h2>
+					<div> <a href="doc/thesis/Thesis.pdf">Master Thesis</a> </div>
+					<div> <a href="doc/final_presentation/Presentation.pdf">Master Thesis Presentation</a> </div>
+				</div>
+				<div id = "software">
+					<h2> Software </h2>
+					<div> <a href="software/CCN-lite-nfn.tar.gz">Download CCN-lite-NFN</a> </div>
+					<div> <a href="software/CCN-lite-nfn">Browse CCN-lite-NFN</a> </div>
+				</div>
+				<div id = "documentation">
+					<h2> Paper </h2>
+					<div> <a href="papers/main.pdf">An Information Centric Network for Computing the
+Distribution of Computations (ACM ICN 2014)</a> </div>
+					<div> <a href="papers/ccnc2014-NFCC-cameraready.pdf">Named Functions and Cached Computations (CCNC 2014)</a> </div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

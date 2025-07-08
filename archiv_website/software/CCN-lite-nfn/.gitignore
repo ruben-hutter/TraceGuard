@@ -1,0 +1,37 @@
+# general patterns:
+*~
+*.o
+
+# Linux kernel module:
+*.ko
+*.cmd
+*.mod.c
+*.mod.o
+.tmp_versions
+modules.order
+Module.symvers
+
+# binaries
+ccn-lite-minimalrelay
+ccn-lite-relay
+ccn-nfn-relay
+ccn-lite-simu
+krivine
+
+# binaries in subdirectories
+util/ccn-lite-cryptoserver
+util/ccn-lite-ctrl
+util/ccn-lite-peek
+util/ccn-lite-ccnb2xml
+util/ccn-lite-pktdump
+util/ccn-lite-deF
+util/ccn-lite-mkC
+util/ccn-lite-mkF
+util/ccn-lite-mkI
+util/ccn-lite-cryptoserver
+util/ccn-lite-peekcomputation
+*.dSYM
+# unit tests
+test/unit/prefix-cmp
+
+# eof

@@ -1,0 +1,94 @@
+body 
+{ 
+	background-color:#FFFFFF;
+}
+
+h1, h2
+{
+	color: black;
+	text-align:center;
+} 
+
+div
+{
+	color: black;
+}
+
+/*div.bg 
+{
+	background-image: url(data/ccnl-lite-nfn.png);
+	background-repeat:no-repeat;
+	width:724px;height:282px;
+	border:0px solid red;
+	padding:0px;
+	margin-top:0px;
+	margin-left: auto;
+	margin-right: auto;
+}*/
+
+.title
+{
+	color: black;
+	text-align:center;
+	font-size:1.2em;
+}
+
+.filled
+{	
+	margin-top: 30px;
+	width:800px;
+	min-height:45px;
+	text-align:center;
+}
+
+.button
+{
+	float: center;
+	color:#000000;
+	background-color:#999999;
+	max-width:500px;
+	text-align:center;
+	padding:0.5em;
+	margin-top: 6px;
+	margin-left: 40px;
+	border-width:1px;
+	border-style:solid;
+	border-color:#808080;
+	-moz-border-radius:2px; /* Firefox */
+	-webkit-border-radius:2px; /* Safari, Chrome */
+	-khtml-border-radius:2px; /* Konqueror */
+	border-radius:2px; /* CSS3 */
+}
+
+#content
+{
+	float: center;
+	width:800px;
+	text-align:left;
+	/*margin-top: 230px;*/
+	padding:0.5em;
+}
+
+#content, .filled
+{
+	margin-left: auto ;
+	background-color:#FFFFFF;
+}
+
+#content, .filled, .button
+{
+	margin-right: auto ;
+	opacity: 0.9;
+}
+
+#abstract, #thesis, #software, #documentation
+{
+	text-align: justify;
+	margin-right: auto;
+	margin-left: auto ;
+	max-width:600px
+}
+
+.clear {
+	clear:left;
+}
