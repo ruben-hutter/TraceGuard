@@ -1,0 +1,79 @@
+%%
+%% University of Basel Beamer Style Package
+%% Based on Metropolis theme with University branding
+%%
+%% Author: Ruben Hutter
+%% Date: 2025
+%%
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{unibas-beamer}[2025/01/08 University of Basel Beamer Style]
+
+% Required packages
+\RequirePackage[english]{babel}
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[T1]{fontenc}
+\RequirePackage{graphicx}
+\RequirePackage[justification=centerlast, font=scriptsize]{caption}
+\RequirePackage[absolute,overlay]{textpos}
+\RequirePackage{xcolor}
+
+% Theme configuration
+\usetheme[
+    outer/progressbar=frametitle,
+    outer/numbering=fraction,
+    titleformat frame=smallcaps, 
+    titleformat section=smallcaps,
+    sectionpage=progressbar,
+]{metropolis}
+
+% University of Basel color definitions
+\definecolor{UnibasMintDark}{RGB}{132,172,168}
+\definecolor{UnibasBlue}{RGB}{109,120,160}
+\definecolor{UnibasPurple}{RGB}{134,76,134}
+\definecolor{UnibasMint}{RGB}{165,215,210}
+\definecolor{UnibasMintLight}{RGB}{192,227,223}
+\definecolor{UnibasRed}{RGB}{210,5,55}
+\definecolor{UnibasAnthrazit}{RGB}{45,55,60}
+\definecolor{UnibasWhitePicture}{RGB}{255,255,255}
+
+% Template configurations
+\setbeamertemplate{itemize items}[triangle]
+\setbeamertemplate{enumerate items}[default]
+
+% Color theme customizations
+\setbeamercolor{alerted text}{fg=UnibasRed}
+\setbeamercolor{frametitle}{fg=UnibasAnthrazit, bg=UnibasMintLight}
+\setbeamercolor{progress bar}{fg=UnibasRed, bg=UnibasMint}
+
+% Custom environments for different content types
+\newenvironment<>{implementation}[1]{%
+    \setbeamercolor{block title}{fg=UnibasMintDark}%
+    \setbeamercolor{enumerate item}{fg=UnibasMintDark}%
+    \setbeamercolor{itemize item}{fg=UnibasMintDark}%
+    \begin{block}#2{#1}}{\end{block}}
+
+\newenvironment<>{research}[1]{%
+    \setbeamercolor{block title}{fg=UnibasBlue}%
+    \setbeamercolor{enumerate item}{fg=UnibasBlue}%
+    \setbeamercolor{itemize item}{fg=UnibasBlue}%
+    \begin{block}#2{#1}}{\end{block}}
+
+\newenvironment<>{evaluation}[1]{%
+    \setbeamercolor{block title}{fg=UnibasPurple}%
+    \setbeamercolor{enumerate item}{fg=UnibasPurple}%
+    \setbeamercolor{itemize item}{fg=UnibasPurple}%
+    \begin{block}#2{#1}}{\end{block}}
+
+% Source citation command
+\newcommand{\source}[1]{%
+    \begin{textblock*}{\textwidth}(0.7cm,8.2cm)
+        \begin{beamercolorbox}[ht=0.5cm,left]{framesource}
+            \usebeamerfont{framesource}\usebeamercolor[fg]{framesource}{\tiny Image source: {#1}}
+        \end{beamercolorbox}
+    \end{textblock*}
+}
+
+\endinput
+
+%% End of file 'unibas-beamer.sty'

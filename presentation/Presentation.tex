@@ -1,0 +1,271 @@
+\documentclass[aspectratio=169]{beamer}
+
+% University of Basel Beamer Style
+\usepackage{unibas-beamer}
+
+% Presentation metadata
+\title{TraceGuard: Taint-Guided Symbolic Execution}
+\subtitle{Bachelor Thesis Defense}
+\author{Ruben Hutter}
+\date{\today}
+\institute[CS]{University of Basel, Faculty of Science \\ Department of Mathematics and Computer Science}
+
+% University logo (adjust path as needed)
+\titlegraphic{%
+    \vspace*{4.2cm}\hspace*{0.70\linewidth}%
+    \includegraphics[width=4cm]{./thm/picLogo}
+}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+\setbeamercolor{background canvas}{bg=UnibasWhitePicture}
+\begin{frame}
+    \frametitle{The Path Explosion Problem}
+    \begin{columns}
+        \begin{column}{0.6\textwidth}
+            \begin{itemize}
+                \item Symbolic execution explores all possible program paths
+                \item Number of paths grows exponentially with program complexity
+                \item Traditional approaches treat all paths equally
+                \item Security vulnerabilities often occur in specific paths
+                \item Need for intelligent path prioritization
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.4\textwidth}
+            \begin{figure}[H]
+                \centering
+                % Add your path explosion diagram here
+                % \includegraphics[width=0.9\linewidth]{./figures/path_explosion}
+                \textit{[Path Explosion Diagram]}
+            \end{figure}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Research Motivation}
+    \begin{research}{Problem Statement}
+        \begin{itemize}
+            \item Symbolic execution suffers from exponential path explosion
+            \item Uniform exploration wastes resources on irrelevant paths
+            \item Security analysis requires focus on user-input processing paths
+        \end{itemize}
+    \end{research}
+    
+    \begin{implementation}{Solution Approach}
+        \begin{itemize}
+            \item Integrate taint analysis with symbolic execution
+            \item Prioritize paths that process potentially malicious data
+            \item Guide exploration toward security-relevant code regions
+        \end{itemize}
+    \end{implementation}
+\end{frame}
+
+\section{Background}
+
+\begin{frame}
+    \frametitle{Symbolic Execution}
+    \begin{itemize}
+        \item Program analysis technique using symbolic variables
+        \item Explores multiple execution paths simultaneously
+        \item Generates constraints for path conditions
+        \item Powerful for vulnerability discovery but suffers from scalability issues
+    \end{itemize}
+    
+    \vspace{1em}
+    \textbf{Key Challenge:} Path explosion makes exhaustive analysis intractable
+\end{frame}
+
+\begin{frame}
+    \frametitle{Taint Analysis}
+    \begin{itemize}
+        \item Tracks data flow from untrusted sources (taint sources)
+        \item Monitors propagation through program operations
+        \item Identifies when tainted data reaches critical operations (sinks)
+        \item Provides security-focused view of program behavior
+    \end{itemize}
+    
+    \vspace{1em}
+    \textbf{Key Insight:} Security vulnerabilities are more likely in paths processing tainted data
+\end{frame}
+
+\section{TraceGuard Approach}
+
+\begin{frame}
+    \frametitle{Core Methodology}
+    \begin{enumerate}
+        \item \textbf{Taint Source Recognition:} Hook input functions (fgets, scanf, read)
+        \item \textbf{Dynamic Taint Tracking:} Monitor data flow through symbolic execution
+        \item \textbf{Path Prioritization:} Score states based on taint interaction
+        \item \textbf{Guided Exploration:} Focus resources on high-priority paths
+    \end{enumerate}
+    
+    \vspace{1em}
+    \begin{evaluation}{Result}
+        Transform uniform exploration into security-focused analysis
+    \end{evaluation}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Implementation Architecture}
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \textbf{Core Components:}
+            \begin{itemize}
+                \item TraceGuard Class
+                \item Function Hooking System
+                \item Taint Tracking Engine
+                \item Custom Exploration Technique
+                \item Visualization Integration
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.5\textwidth}
+            \textbf{Built on Angr Framework:}
+            \begin{itemize}
+                \item Binary analysis platform
+                \item Symbolic execution engine
+                \item Multi-architecture support
+                \item Extensible Python interface
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\section{Evaluation}
+
+\begin{frame}
+    \frametitle{Experimental Setup}
+    \begin{implementation}{Benchmark Suite}
+        \begin{itemize}
+            \item 7 synthetic test programs with known vulnerabilities
+            \item Programs designed to challenge symbolic execution
+            \item Multiple runs with 120-second timeout per execution
+            \item Comparison: TraceGuard vs Classical Angr
+        \end{itemize}
+    \end{implementation}
+    
+    \begin{evaluation}{Metrics}
+        \begin{itemize}
+            \item Vulnerability detection rate
+            \item Execution time performance
+            \item Basic block coverage efficiency
+            \item State exploration patterns
+        \end{itemize}
+    \end{evaluation}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Key Results}
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \textbf{Vulnerability Detection:}
+            \begin{itemize}
+                \item 100\% detection rate across all tests
+                \item 5× improvement in challenging scenarios
+                \item Consistent performance across multiple runs
+            \end{itemize}
+            
+            \vspace{1em}
+            \textbf{Efficiency:}
+            \begin{itemize}
+                \item Competitive execution times
+                \item 36.8\% to 75.0\% of classical coverage
+                \item Focused exploration strategy
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.5\textwidth}
+            \begin{figure}[H]
+                \centering
+                % Add your results chart here
+                % \includegraphics[width=\linewidth]{./figures/results_chart}
+                \textit{[Results Visualization]}
+            \end{figure}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\section{Contributions}
+
+\begin{frame}
+    \frametitle{Research Contributions}
+    \begin{research}{Novel Integration}
+        \begin{itemize}
+            \item First comprehensive framework for real-time taint-guided symbolic execution
+            \item Dynamic state prioritization based on security relevance
+            \item Practical implementation demonstrating feasibility
+        \end{itemize}
+    \end{research}
+    
+    \begin{implementation}{Technical Achievements}
+        \begin{itemize}
+            \item Custom Angr exploration technique
+            \item Function-level taint tracking system
+            \item Adaptive scoring algorithm with configurable thresholds
+            \item Comprehensive benchmarking infrastructure
+        \end{itemize}
+    \end{implementation}
+\end{frame}
+
+\section{Future Work}
+
+\begin{frame}
+    \frametitle{Limitations and Future Directions}
+    \textbf{Current Limitations:}
+    \begin{itemize}
+        \item Evaluation limited to synthetic test programs
+        \item Primary focus on AMD64 C/C++ binaries
+        \item Dependency on accurate taint source identification
+    \end{itemize}
+    
+    \vspace{1em}
+    \textbf{Future Enhancements:}
+    \begin{itemize}
+        \item Real-world application validation
+        \item Multi-architecture and language support
+        \item Enhanced taint granularity (byte-level tracking)
+        \item Integration with fuzzing frameworks
+        \item Machine learning-guided exploration strategies
+    \end{itemize}
+\end{frame}
+
+\section{Conclusion}
+
+\setbeamercolor{background canvas}{bg=UnibasWhitePicture}
+\begin{frame}
+    \frametitle{Conclusion}
+    \begin{evaluation}{Achievements}
+        \begin{itemize}
+            \item Successfully integrated taint analysis with symbolic execution
+            \item Demonstrated significant improvements in vulnerability discovery
+            \item Maintained competitive performance while reducing exploration scope
+            \item Provided foundation for security-aware program analysis
+        \end{itemize}
+    \end{evaluation}
+    
+    \vspace{1em}
+    \textbf{Impact:} TraceGuard transforms symbolic execution from uniform exploration into intelligent, security-focused analysis, addressing fundamental scalability challenges while improving vulnerability detection effectiveness.
+\end{frame}
+
+\section{Questions?}
+
+\begin{frame}
+    \frametitle{Thank You}
+    \begin{center}
+        \Large Questions and Discussion
+        
+        \vspace{2em}
+        \normalsize
+        TraceGuard: Taint-Guided Symbolic Execution \\
+        for Enhanced Binary Analysis
+        
+        \vspace{1em}
+        Ruben Hutter \\
+        University of Basel
+    \end{center}
+\end{frame}
+
+\end{document}
