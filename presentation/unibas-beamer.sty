@@ -18,6 +18,15 @@
 \RequirePackage[absolute,overlay]{textpos}
 \RequirePackage{xcolor}
 
+% Additional packages for presentation functionality
+\RequirePackage{tikz}
+\RequirePackage{pgfplots}
+\RequirePackage{booktabs}
+\RequirePackage{listings}
+
+% TikZ libraries
+\usetikzlibrary{shapes.geometric,arrows.meta}
+
 % Theme configuration
 \usetheme[
     outer/progressbar=frametitle,
@@ -36,6 +45,18 @@
 \definecolor{UnibasRed}{RGB}{210,5,55}
 \definecolor{UnibasAnthrazit}{RGB}{45,55,60}
 \definecolor{UnibasWhitePicture}{RGB}{255,255,255}
+
+% Code listing style
+\lstset{
+    language=C,
+    basicstyle=\footnotesize\ttfamily,
+    keywordstyle=\color{UnibasBlue},
+    stringstyle=\color{UnibasRed},
+    commentstyle=\color{UnibasMintDark},
+    showstringspaces=false,
+    frame=single,
+    backgroundcolor=\color{UnibasMintLight!20}
+}
 
 % Template configurations
 \setbeamertemplate{itemize items}[triangle]
