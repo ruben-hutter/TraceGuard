@@ -586,21 +586,21 @@ strcpy(dest, buffer);       // POTENTIAL VULNERABILITY
     \frametitle{Future Research Directions}
     \begin{columns}
         \begin{column}{0.5\textwidth}
-            \textbf{Immediate Extensions:}
+            \textbf{Enhanced Configuration:}
             \begin{itemize}
-                \item \textbf{Real-world validation:} Large-scale commercial software
-                \item \textbf{Enhanced taint sources:} Network protocols, file formats
-                \item \textbf{Multi-architecture:} ARM, RISC-V support
-                \item \textbf{Integration:} Fuzzing tools, static analysis
+                \item \textbf{Header file integration:} Replace meta files with automatic C/C++ header parsing
+                \item \textbf{Adaptive parameters:} Dynamic configuration based on program complexity
+                \item \textbf{Custom entry points:} Support user-defined analysis starting points
+                \item \textbf{Performance tuning:} Systematic optimization of scoring parameters
             \end{itemize}
         \end{column}
         \begin{column}{0.5\textwidth}
-            \textbf{Advanced Research:}
+            \textbf{Architecture \& Scale:}
             \begin{itemize}
-                \item \textbf{Machine learning guidance:} AI-driven exploration
-                \item \textbf{Distributed analysis:} Cloud-scale symbolic execution
-                \item \textbf{Formal verification:} Soundness guarantees
-                \item \textbf{Byte-level tracking:} Enhanced taint granularity
+                \item \textbf{Multi-architecture:} Complete ARM and x86 platform support
+                \item \textbf{Library analysis:} Support for analyzing library interfaces
+                \item \textbf{Real-world validation:} Large-scale commercial software testing
+                \item \textbf{Input source expansion:} Network protocols, file formats, IPC
             \end{itemize}
         \end{column}
     \end{columns}
@@ -622,7 +622,6 @@ strcpy(dest, buffer);       // POTENTIAL VULNERABILITY
             \item \textbf{Security auditing:} Automated vulnerability discovery
             \item \textbf{DevSecOps:} Pre-deployment security testing
             \item \textbf{Penetration testing:} Target identification for manual analysis
-            \item \textbf{Critical Infrastructure:} Security validation for high-stakes systems
         \end{itemize}
     \end{implementation}
 \end{frame}
@@ -631,41 +630,23 @@ strcpy(dest, buffer);       // POTENTIAL VULNERABILITY
 
 \begin{frame}
     \frametitle{Summary and Conclusion}
-    \begin{evaluation}{What We Achieved}
+    \begin{evaluation}{What I Achieved}
         \begin{itemize}
-            \item \textbf{Solved fundamental problem:} Path explosion in security analysis
-            \item \textbf{Demonstrated effectiveness:} 100\% vulnerability detection, $5 \times$ improvement
-            \item \textbf{Practical implementation:} Ready for real-world deployment
-            \item \textbf{Research foundation:} Platform for future security-aware analysis
+            \item \textbf{Addressed fundamental limitation:} Path explosion in symbolic execution through intelligent prioritization
+            \item \textbf{Demonstrated effectiveness:} 100\% vulnerability detection with $5 \times$ improvement in challenging scenarios
+            \item \textbf{Practical implementation:} Complete system built on Angr framework, ready for deployment
+            \item \textbf{Research foundation:} Platform for continued security-aware program analysis research
         \end{itemize}
     \end{evaluation}
-    
-    \begin{implementation}{Deployment Context}
-        \begin{itemize}
-            \item \textbf{Continuous Integration:} Automated security testing in CI/CD pipelines
-            \item \textbf{Red Team Operations:} Efficient vulnerability discovery
-            \item \textbf{Research Platform:} Foundation for advanced program analysis
-        \end{itemize}
-    \end{implementation}
 \end{frame}
 
 \begin{frame}
-    \frametitle{Research Contributions}
-    \begin{research}{Novel Integration}
+    \frametitle{Summary and Conclusion}
+    \begin{implementation}{Key Results}
         \begin{itemize}
-            \item First comprehensive framework for real-time taint-guided symbolic execution
-            \item Dynamic state prioritization based on security relevance
-            \item Practical implementation demonstrating feasibility
-        \end{itemize}
-    \end{research}
-    
-    \vspace{1em}
-    \begin{implementation}{Technical Achievements}
-        \begin{itemize}
-            \item Custom Angr exploration technique
-            \item Function-level taint tracking system
-            \item Adaptive scoring algorithm with configurable thresholds
-            \item Comprehensive benchmarking infrastructure
+            \item \textbf{Increased vulnerability discovery:} Found more vulnerabilities while exploring only 36.8\% to 75.0\% of basic blocks
+            \item \textbf{Competitive performance:} Maintained execution times within 10\% of classical approaches
+            \item \textbf{Validated approach:} Proved that security-focused exploration outperforms uniform path coverage
         \end{itemize}
     \end{implementation}
 \end{frame}
@@ -688,12 +669,7 @@ strcpy(dest, buffer);       // POTENTIAL VULNERABILITY
         Supervisor: Prof. Dr. Christopher Scherb
         
         \vspace{2em}
-        \textbf{Available Resources:}
-        \begin{itemize}
-            \item \textbf{Live Tool:} github.com/ruben-hutter/TraceGuard
-            \item \textbf{Thesis:} Full technical details and evaluation
-            \item \textbf{Demo:} Additional scenarios and visualizations
-        \end{itemize}
+        \textbf{Tool:} https://github.com/ruben-hutter/TraceGuard
     \end{center}
 \end{frame}
 

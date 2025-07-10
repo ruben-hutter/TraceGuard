@@ -20,6 +20,10 @@
 
 ---
 
+## Slide 0: Title Slide
+Good morning, everyone. I'm Ruben Hutter, and I'm excited to present my Bachelor's thesis work to you today. I'd like to thank my supervisor, Prof. Dr. Christopher Scherb, and my examiner, Dr. Marco Vogt, for their support and guidance throughout this research.
+Today's presentation is structured as follows...
+
 ## Slide 2: Where Do Software Vulnerabilities Actually Hide?
 - Start with security fundamentals: "Where do we actually find bugs?"
 - Point to diagram: Data flow from external sources inward
@@ -167,4 +171,47 @@ The slides look good overall! Here are speaking notes and one small improvement 
 
 ---
 
-TODO: Future Directions, Conclusion
+## Slide 23: Future Research Directions
+**Column 1: Enhanced Configuration**
+- **Header integration**: "Replace manual meta files with automatic parsing of C/C++ headers - no more manual function signature definition"
+- **Adaptive parameters**: "The scoring thresholds could automatically adjust based on program complexity metrics"
+- **Custom entry points**: "Currently starts from main() - could support analyzing specific library functions or modules"
+- **Performance tuning**: "Systematic optimization of the scoring algorithm through extensive testing"
+
+**Column 2: Architecture & Scale**
+- **Multi-architecture**: "Full validation on ARM and x86 - currently primarily tested on AMD64"
+- **Library analysis**: "Extend beyond executables to analyze library interfaces and entry points"
+- **Real-world validation**: "The big test - deploy on commercial software systems, not just synthetic programs"
+- **Input expansion**: "Track taint from network sockets, file parsing, inter-process communication"
+
+## Slide 24: Broader Impact & Applications
+
+**Academic Impact section:**
+- **Methodology**: "This work establishes a new paradigm - security-aware program analysis that prioritizes vulnerability discovery over general coverage"
+- **Tool contribution**: "TraceGuard is open source - provides a research platform for others to build upon"
+- **Empirical validation**: "Demonstrates that taint-guided approaches work in practice, not just theory"
+
+**Industry Applications section:**
+- **Security auditing**: "Companies could integrate this into their security review processes for automatic vulnerability scanning"
+- **DevSecOps**: "Integrate into CI/CD pipelines - catch vulnerabilities before deployment, not after"
+- **Penetration testing**: "Help security researchers identify the most promising targets for manual analysis"
+
+---
+
+## Slide 25: What I Achieved
+- **Opening**: "Let me summarize what I accomplished with this research."
+- **Fundamental problem**: "I addressed the core scalability issue in symbolic execution - path explosion - through intelligent, security-focused prioritization instead of uniform exploration."
+- **Strong results**: "Demonstrated 100% vulnerability detection across all test programs, with a remarkable 5× improvement in the most challenging state explosion scenario."
+- **Practical outcome**: "This isn't just theoretical - I built a complete, working system on top of Angr that's ready for real-world deployment."
+- **Research value**: "TraceGuard provides a solid foundation for future research in security-aware program analysis."
+
+## Slide 26: Key Results
+- **Superior discovery**: "The numbers tell the story - I found significantly more vulnerabilities while exploring only 37% to 75% of the code compared to classical approaches."
+- **Competitive performance**: "Achieved this improvement without sacrificing speed - execution times stayed within 10% of classical symbolic execution."
+- **Validated approach**: "Most importantly, I proved that following the data flow - focusing on security-relevant paths - outperforms trying to cover everything uniformly."
+- **Paradigm shift**: "This validates a fundamental shift from 'explore everything' to 'follow the dangerous data.'"
+
+## Transition to Questions
+- **Closing**: "This research demonstrates that we can make symbolic execution both more effective and more practical for security analysis. I'm excited to hear your questions and discuss how this approach could be extended further."
+
+The key is to emphasize both the **practical achievements** (working tool, strong results) and the **research contribution** (validated new approach) while maintaining confidence in your work.
