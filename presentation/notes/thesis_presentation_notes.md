@@ -62,8 +62,6 @@ Today's presentation is structured as follows...
 
 ---
 
-Here are speaking notes for "The Insight" section:
-
 ## Slide 8: The Core Insight - Taint as a Guide
 - **Connect to previous**: "We saw SE has power but wastes resources. What if we could guide it?"
 - **Point to left diagram**: Classical SE explores all paths equally - no prioritization
@@ -84,7 +82,6 @@ Here are speaking notes for "The Insight" section:
 - **Left side**: "Traditional SE explores everything hoping to find bugs"
 - **Right side**: "TraceGuard uses real-time taint tracking to prioritize"
 - **Key difference**: "Integration, not post-processing - we guide SE as it runs"
-- **Result preview**: "In our hardest test, this found 5x more vulnerabilities while exploring only 37% of the code"
 - **Transition**: "So how exactly does this work? Let me show you the solution..."
 
 ---
@@ -190,11 +187,6 @@ The slides look good overall! Here are speaking notes and one small improvement 
 - **Methodology**: "This work establishes a new paradigm - security-aware program analysis that prioritizes vulnerability discovery over general coverage"
 - **Tool contribution**: "TraceGuard is open source - provides a research platform for others to build upon"
 - **Empirical validation**: "Demonstrates that taint-guided approaches work in practice, not just theory"
-
-**Industry Applications section:**
-- **Security auditing**: "Companies could integrate this into their security review processes for automatic vulnerability scanning"
-- **DevSecOps**: "Integrate into CI/CD pipelines - catch vulnerabilities before deployment, not after"
-- **Penetration testing**: "Help security researchers identify the most promising targets for manual analysis"
 
 ---
 
