@@ -1,0 +1,1 @@
+Put maybe a quick guide on how to make the script ready to use (e.g. install dependencies, etc.)

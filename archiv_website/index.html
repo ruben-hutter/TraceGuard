@@ -1,0 +1,54 @@
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <title>Optimizing Symbolic Execution Through Taint Analysis and Path Prioritization</title>
+        <meta content="">
+        <link rel="stylesheet" type="text/css" href="style.css">
+        <script language="JavaScript" src="index.js"></script>
+    </head>
+    <body class="gbg" onload="loadAbstract()">
+        <div>
+            <h1>Optimizing Symbolic Execution Through Taint Analysis and Path Prioritization</h1>
+        </div>
+        <div class="bg">
+            <div class="filled">
+                <div class="title">Bachelor Thesis</div>
+                <div class="title">Ruben Hutter</div>
+            </div>
+            <div class="filled">
+                <button class="button" onmouseover="mouseOver(this)" onmouseout="mouseOut(this)" onmousedown="loadAbstract()">Abstract</button>
+                <button class="button" onmouseover="mouseOver(this)" onmouseout="mouseOut(this)" onmousedown="loadThesis()">Thesis</button>
+                <button class="button" onmouseover="mouseOver(this)" onmouseout="mouseOut(this)" onmousedown="loadSoftware()">Software</button>
+            </div>
+            <div class="filled">
+                <img src="data/traceguard-logo.svg" alt="TraceGuard-logo">
+            </div>
+            <div id="content">
+                <div id="abstract">
+                    <h2>Abstract</h2>
+                    <p>
+                    Symbolic execution is a powerful program analysis technique widely used for vulnerability discovery and test case generation. However, its practical application is often hampered by scalability issues, primarily due to the "path explosion problem" where the number of possible execution paths grows exponentially with program complexity. This thesis addresses this fundamental challenge by proposing an optimized approach to symbolic execution that integrates taint analysis and path prioritization.
+                    </p>
+                    <p>
+                    The core contribution is a novel exploration strategy that moves away from uniform path exploration towards targeted analysis of security-critical program behaviors. The approach prioritizes execution paths originating from memory allocations and user input processing points, as these represent common sources of vulnerabilities. By leveraging dynamic taint analysis, the system identifies and tracks data flow from these critical sources, enabling the symbolic execution engine to focus computational resources on paths influenced by tainted data while deprioritizing paths with no dependency on external inputs.
+                    </p>
+                    <p>
+                    The implementation integrates this taint-guided exploration strategy with the angr symbolic execution framework, introducing a scoring mechanism that dynamically adjusts path prioritization based on taint propagation. The effectiveness of this optimization is evaluated through comparative analysis, examining runtime efficiency, path coverage quality, and vulnerability discovery capabilities. Results demonstrate that this approach can significantly reduce the search space while maintaining or improving the detection of security-relevant program behaviors, making symbolic execution more practical for large and complex software systems.
+                    </p>
+                </div>
+                <div id="thesis">
+                    <h2>Thesis</h2>
+                    <div><a href="doc/thesis/Thesis.pdf">Bachelor Thesis</a></div>
+                    <div><a href="doc/final_presentation/Presentation.pdf">Bachelor Thesis Presentation</a></div>
+                </div>
+                <div id="software">
+                    <h2>Software</h2>
+                    <div><a href="https://github.com/ruben-hutter/TraceGuard">TraceGuard GitHub Repository</a></div>
+                    <div><a href="software/TraceGuard.tar.gz">Download TraceGuard Source Code</a></div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
