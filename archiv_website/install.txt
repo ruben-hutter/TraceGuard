@@ -1,12 +1,1 @@
-Installation of the Multi Feature Demons Registration Library
-	1. To install the itk based library you have to install itk (tested with version 4.10) and cmake.
-	2. Change to the root directory of the Multi Feature Demons Registration Library ("itkMFDR").
-	3. Configure the build system with adjusted pathes: "cmake -DITK_DIR=/export/contrib/InsightToolkit-4.10/linux64/release_wrapping/lib/cmake/ITK-4.1 -DWrapITK_DIR=/export/contrib/InsightToolkit-4.10/linux64/u12_04_release/lib/cmake/ITK-4.1/WrapITK -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/itkMFDR/Release".
-	4. Run (3) twice to configure the build system.
-	5. Run "make" and "make install" to build and install the library.
-
-Installation of a scripted 3dSlicer 4 Modules
-	1. Add the path of the module to the "Additional Module Path" in the 3dSlicer 4 settings.
-	2. Restart the software, the module will be loaded automatically.
-
-For more installation details please take a look to the documentation.
+Put maybe a quick guide on how to make the script ready to use (e.g. install dependencies, etc.)
